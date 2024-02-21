@@ -1,0 +1,56 @@
+[[package]]
+name = "cloudmodel"
+version = "0.1.0"
+description = "A dataclass model for cloud infrastructure and applications"
+category = "main"
+optional = false
+python-versions = "^3.10"
+develop = true
+
+[package.dependencies]
+pint = "0.20.1"
+
+[package.source]
+type = "directory"
+url = "../cloudmodel"
+
+[[package]]
+name = "pint"
+version = "0.20.1"
+description = "Physical quantities module"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+
+[package.extras]
+babel = ["babel (<=2.8)"]
+dask = ["dask"]
+numpy = ["numpy (>=1.19.5)"]
+pandas = ["pint-pandas (>=0.3)"]
+test = ["pytest", "pytest-cov", "pytest-mpl", "pytest-subtests"]
+uncertainties = ["uncertainties (>=3.1.6)"]
+xarray = ["xarray"]
+
+[[package]]
+name = "pulp"
+version = "2.8.0"
+description = "PuLP is an LP modeler written in python. PuLP can generate MPS or LP files and call GLPK, COIN CLP/CBC, CPLEX, and GUROBI to solve linear problems."
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[metadata]
+lock-version = "1.1"
+python-versions = "^3.10"
+content-hash = "7cc16762a06396ee7f11f3cf351d894802ed9e0f294eaa39f0511be61f0a4d72"
+
+[metadata.files]
+cloudmodel = []
+pint = [
+    {file = "Pint-0.20.1-py3-none-any.whl", hash = "sha256:68afe65665542ee3ec99f69f043b1d39bfe7c6d61b786940157138fd08b838fb"},
+    {file = "Pint-0.20.1.tar.gz", hash = "sha256:387cf04078dc7dfe4a708033baad54ab61d82ab06c4ee3d4922b1e45d5626067"},
+]
+pulp = [
+    {file = "PuLP-2.8.0-py3-none-any.whl", hash = "sha256:4a19814a5b0a4392d788ac2315263435293579b0583c3469943fe0c6a586f263"},
+    {file = "PuLP-2.8.0.tar.gz", hash = "sha256:4903bf96110bbab8ed2c68533f90565ebb76aa367d9e4df38e51bf727927c125"},
+]
