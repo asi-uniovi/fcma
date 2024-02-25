@@ -1,4 +1,6 @@
-"""This module provides ways of visualizing problems and solutions for FCMA."""
+"""
+This module provides ways of visualizing the solutions for FCMA.
+"""
 
 from rich.table import Table, Column
 from rich import print

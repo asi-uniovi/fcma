@@ -1,0 +1,4 @@
+pint
+pulp
+rich
+cloudmodel @ git+https://jentrialgo@github.com/jldiaz-uniovi/cloudmodel.git#egg=cloudmodel
