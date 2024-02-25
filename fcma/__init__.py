@@ -1,4 +1,6 @@
-"""Top-level package for FCMA."""
+"""
+Top-level package for FCMA.
+"""
 
 __author__ = """Jose Maria Lopez"""
 __email__ = "chechu@uniovi.es"

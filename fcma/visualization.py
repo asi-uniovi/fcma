@@ -1,222 +1,125 @@
 """This module provides ways of visualizing problems and solutions for FCMA."""
 
-from rich.console import Console
 from rich.table import Table, Column
-from rich import print  # pylint: disable=redefined-builtin
-from cloudmodel.unified.units import Requests
-from .model import IcAllocationSolution, FcmaStatus, Problem
+from rich import print
+from cloudmodel.unified.units import CurrencyPerTime, RequestsPerTime
+from .model import Vm, SolvingStats, FcmaStatus
 
 
-class SolutionPrettyPrinter:
-    """Utility methods to create pretty presentations of solutions."""
+class SolutionPrinter:
+    """
+    Utility methods to create pretty presentations of solutions.
+    """
 
-    def __init__(self, sol: IcAllocationSolution):
-        self.sol = sol
-        self.console = Console()
-
-    def get_summary(self) -> str:
-        """Returns a summary of the solution."""
-        if self.is_infeasible_sol():
-            return f"Non feasible solution. [bold red]{self.sol.solving_stats.ilp_status}"
-
-        res = f"\nTotal cost: {self.sol.cost:.6f}"
-
-        return res
+    def __init__(self, vms: list[Vm], statistics: SolvingStats):
+        self.vms = vms
+        self.statistics = statistics
 
     def print(self):
-        """Prints tables and a summary of the solution."""
+        """ Prints tables and a summary of the solution."""
         if self.is_infeasible_sol():
-            print(f"Non feasible solution. [bold red]{self.sol.solving_stats.ilp_status}")
+            print(f"Non feasible solution. [bold red]{self.statistics.final_status}")
             return
 
         print(self.get_ic_table())
-        print(self.get_cc_table())
-        print(self.get_summary())
+        for table in self.get_app_tables():
+            print(table)
+        self.print_statistics()
 
     def get_ic_table(self) -> Table:
-        """Returns a Rich table with information about the instance classes."""
+        """
+        Return a Rich table with information about the instance classes.
+        :return: The instance class table.
+        """
         if self.is_infeasible_sol():
-            return Table(
-                title=f"Non feasible solution. [bold red]{self.sol.solving_stats.ilp_status}"
-            )
+            return Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
 
-        table = Table(
-            "IC",
-            Column(header="Cost", justify="right"),
-            title="IC allocation (only used ICs)",
-        )
+        table = Table("VM", Column(header="Cost", justify="right"), title="Virtual Machines")
 
-        alloc = self.sol.alloc
-
-        total_num_ics = 0
-        total_cost = 0.0
-        for ic, ic_allocations in alloc.ics.items():
-            total_num_ics += ic_allocations
-            cost = (ic.price * self.sol.problem.sched_time_size).to_reduced_units()
-            total_cost += cost * ic_allocations
-
-            table.add_row(f"{ic.name}[{ic_allocations}]", f"{cost * ic_allocations:.6f}")
-
+        total_num_vms = {}
+        ic_prices = {}
+        for fm in self.vms:
+            for vm in self.vms[fm]:
+                ic_name = vm.ic.name
+                if ic_name not in total_num_vms:
+                    total_num_vms[ic_name] = 1
+                else:
+                    total_num_vms[ic_name] += 1
+                if ic_name not in ic_prices:
+                    ic_prices[ic_name] = vm.ic.price
+        total_cost = CurrencyPerTime("0 usd/hour")
+        total_vms = 0
+        for ic_name in total_num_vms:
+            ic_cost = total_num_vms[ic_name] * ic_prices[ic_name].to_reduced_units()
+            total_cost += ic_cost
+            total_vms += total_num_vms[ic_name]
+            table.add_row(f"{ic_name} (x{total_num_vms[ic_name]})", f"{ic_cost:.3f}")
         table.add_section()
-
-        table.add_row(
-            f"total: {total_num_ics}",
-            f"{total_cost:.6f}",
-        )
-
+        table.add_row(f"Total: {total_vms}", f"{total_cost:.3f}")
         return table
 
-    def get_cc_table(self) -> Table:
-        """Returns a Rich table with information about the container classes."""
+    def get_app_tables(self) -> list[Table]:
+        """
+        For each application returns a Rich table with information about the allocation of its container classes.
+        :return: One table with container applications for each application.
+        """
         if self.is_infeasible_sol():
-            return Table(
-                title=f"Non feasible solution. [bold red]{self.sol.solving_stats.ilp_status}"
-            )
+            return Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
 
-        alloc = self.sol.alloc
-
-        table = Table(
-            "IC",
-            "Container",
-            "App",
-            Column(header="Perf", justify="right"),
-            title="Container allocation (only used ICs)",
-        )
-        for app in self.sol.problem.system.apps:
-            total_num_ics = 0
-            total_num_replicas = 0
-            total_perf = Requests("0 req")
-            for container, replicas in alloc.containers.items():
-                if container.app.name != app.name or replicas == 0:
-                    continue
-                app = container.app
-                total_num_replicas += 1
-                total_num_ics += 1
-                perf_cc = self.sol.problem.system.perfs[(container.ic, app)]
-                perf_cc = (perf_cc * self.sol.problem.sched_time_size).to_reduced_units()
-                total_perf += perf_cc * replicas
-
-                table.add_row(
-                    container.ic.name,
-                    f"{container.norm_name} (x{int(replicas)})",
-                    app.name,
-                    f"{perf_cc} (x{int(replicas)})",
-                )
-            table.add_row(
-                f"total: {total_num_ics}",
-                f"{int(total_num_replicas)}",
-                "",
-                f"{total_perf:.3f}",
-            )
-            table.add_section()
-
-        return table
-
-    def is_infeasible_sol(self):
-        """Returns True if the solution is infeasible."""
-        return self.sol.solving_stats.ilp_status not in [
-            FcmaStatus.OPTIMAL,
-            FcmaStatus.FEASIBLE,
-        ]
-
-
-class ProblemPrettyPrinter:
-    """Utility functions to show pretty presentation of a problem."""
-
-    def __init__(self, problem: Problem) -> None:
-        self.problem: Problem = problem
-
-    def print(self) -> None:
-        """Prints information about the problem."""
-        self.print_ics()
-        self.print_ccs()
-        self.print_apps()
-        self.print_perfs()
-
-    def table_ics(self) -> Table:
-        """Returns a table with information about the instance classes."""
-        table = Table(title="Instance classes")
-        table.add_column("Instance class")
-        table.add_column("Cores", justify="right")
-        table.add_column("Mem", justify="right")
-        table.add_column("Price", justify="right")
-
-        for ic in self.problem.system.ics:
-            table.add_row(
-                ic.name, str(ic.cores), str(ic.mem), str(ic.price)
-            )
-
-        return table
-
-    def print_ics(self) -> None:
-        """Prints information about the instance classes."""
-        print(self.table_ics())
-
-    def table_ccs(self) -> Table:
-        """Returns a table with information about the container classes."""
-        table = Table(title="Container classes")
-        table.add_column("Container class")
-        table.add_column("Cores", justify="right")
-        table.add_column("Mem", justify="right")
-
-        for cc in self.problem.system.ccs:
-            table.add_row(cc.name, str(cc.cores), str(cc.mem))
-
-        return table
-
-    def print_ccs(self) -> None:
-        """Prints information about the container classes."""
-        print(self.table_ccs())
-
-    def table_apps(self) -> Table:
-        """Returns a rich table with information about the apps, including the
-        workload"""
-        table = Table(title="Apps")
-        table.add_column("Name")
-        table.add_column("Workload", justify="right")
-
-        for app in self.problem.system.apps:
-            wl = self.problem.workloads[app]
-            table.add_row(app.name, str(wl.num_reqs / wl.time_slot_size))
-
-        return table
-
-    def print_apps(self) -> None:
-        """Prints information about the apps."""
-        print(self.table_apps())
-
-    def print_perfs(self) -> None:
-        """Prints information about the performance."""
-        table = Table(title="Performances")
-        table.add_column("Instance class")
-        table.add_column("Container class")
-        table.add_column("App")
-        table.add_column("RPS", justify="right")
-        table.add_column("Price per million req.", justify="right")
-
-        for ic in self.problem.system.ics:
-            first = True
-            for app in self.problem.system.apps:
-                for cc in self.problem.system.ccs:
-                    if (ic, cc) not in self.problem.system.perfs:
-                        continue  # Not all ICs handle all ccs
-
-                    if first:
-                        ic_column = f"{ic.name}"
-                        first = False
+        # Get application table rows
+        app_table_entries = {}
+        for fm in self.vms:
+            for vm in self.vms[fm]:
+                for cg in vm.cgs:
+                    cores = int(cg.cc.cores.to("mcore").magnitude)
+                    container_name = f"{str(cg.cc)}-{cores} mcores"
+                    app_name = cg.cc.app.name
+                    row = (str(vm), container_name, cg.cc.perf, cg.replicas)
+                    if app_name not in app_table_entries:
+                        app_table_entries[app_name] = {"rows": [row], "total_perf": cg.cc.perf * cg.replicas}
                     else:
-                        ic_column = ""
+                        app_table_entries[app_name]["rows"].append(row)
+                        app_table_entries[app_name]["total_perf"] += cg.cc.perf * cg.replicas
 
-                    perf = self.problem.system.perfs[(ic, cc)]
-                    price_per_1k_req = 1e6 * (ic.price.to("usd/h") / perf.to("req/h"))
-                    table.add_row(
-                        ic_column,
-                        cc.name,
-                        app.name,
-                        str(perf.to("req/s").magnitude),
-                        f"{price_per_1k_req.magnitude:.2f}",
-                    )
-
+        # Get an allocation table for each application
+        tables = []
+        for app_name in app_table_entries:
+            table = Table("VM", "Container", "App", Column(header="Perf", justify="right"),
+                          title=f"Container allocation for {app_name}")
+            total_app_replicas = 0
+            total_app_perf = RequestsPerTime("0 req/s")
+            for app_row in app_table_entries[app_name]["rows"]:
+                total_app_replicas += app_row[3]
+                total_app_perf += app_row[2] * app_row[3]
+                table.add_row(app_row[0], f"{app_row[1]} (x{app_row[3]})", app_name,
+                              f"{app_row[2].to('req/s')} (x{app_row[3]})")
             table.add_section()
+            table.add_row(f"total:", f"{total_app_replicas}", "", f"{total_app_perf:.3f}")
+            tables.append(table)
 
-        print(table)
+        return tables
+
+    def print_statistics(self) -> None:
+        """
+        Print solution statistics.
+        """
+        print("")
+        print("Statistics")
+        print("----------")
+        print(self.statistics.solving_pars)
+        if self.statistics.partial_ilp_seconds is not None:
+            print(f"Time spent in the partial ILP problem: {self.statistics.partial_ilp_seconds:.3f} seconds")
+        if self.statistics.partial_ilp_status is not None:
+            print(f"Solution status after the ILP problem: {self.statistics.partial_ilp_status}")
+        print(f"Status previous to the allocation phase: {self.statistics.pre_allocation_status}")
+        print(f"Cost before the allocation phase: {self.statistics.pre_allocation_cost:.2f}")
+        print(f"Time spent before the allocation phase: {self.statistics.pre_allocation_seconds:.3f} seconds")
+        print(f"Final status: {self.statistics.final_status}")
+        print(f"Final cost: {self.statistics.final_cost:.2f}")
+        print(f"Total spent time: {self.statistics.total_seconds: .3f} seconds")
+
+    def is_infeasible_sol(self) -> bool:
+        """
+        Returns True if the solution is infeasible.
+        """
+        return self.statistics.final_status not in [FcmaStatus.OPTIMAL, FcmaStatus.FEASIBLE]

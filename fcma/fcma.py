@@ -1,65 +1,53 @@
 """
-Main module of the fcma package. It defines class Fcma for fast container to machine allocation
+Main module of the fcma package. It defines class Fcma for Fast Container to Machine Allocation
 """
 from math import ceil
 import logging
 import os
 from time import time as current_time
 import itertools
-from pulp import (
-    LpVariable,
-    lpSum,
-    LpProblem,
-    LpMinimize,
-    LpMaximize,
-    LpAffineExpression,
-    PulpSolverError,
-    COIN_CMD,
-    log,
-    subprocess,
-    constants,
-    warnings,
-    operating_system,
-    devnull,
-    PULP_CBC_CMD,
-)
-from .model import *
+from pulp import LpVariable, lpSum, LpProblem, LpMinimize, LpMaximize, LpAffineExpression, PulpSolverError,\
+                 COIN_CMD, log, subprocess, constants, warnings, operating_system, devnull, PULP_CBC_CMD
+from fcma.model import *
 
 
 class Fcma:
     """
-    This class provide methods to allocate containers to machines using FCMA algorithms
+    This class provide methods to allocate containers to machines using FCMA algorithms.
     """
     # A dictionary with instance class aggregation parameters for each family.
-    # They are calculated only once for each instance class family and cahed in this variable
+    # They are calculated only once for each instance class family and cached in this variable
     fm_aggregation_pars = {}
 
     @staticmethod
     def _remove_ics_same_param_higher_price(ics: list[InstanceClass, ...], values: list[float, ...],
                                             reverse: bool = False) -> None:
         """
-        Simplify a list of instance classes in the same family, removing those with the same parameter value,
+        Shorten a list of instance classes in the same family, removing those with the same parameter value,
         but a higher price. After the removal operation, instance classes in the list are sorted
-        by increasing values if reverse is false or decreasing values otherwise.
+        by increasing or decreasing parameter values.
+        :param ics: List of instance classes.
+        :param values: List with a value for each instance class.
+        :param reverse: Instance classes are sorted by decreasing values when it is false.
         """
-
         # Firstly, check instance classes
         if len(ics) == 0:
             return
-        for ic in ics[1:]:
-            if ic.family != ics[0].family:
-                raise ValueError(f"Instance classes to simplify must belong to the same family")
 
+        # Sort instance classes by increasing or decreasing parameter values
         ics_value = {ics[i]: values[i] for i in range(len(ics))}
         ics.sort(key=lambda instance_class: ics_value[instance_class], reverse=reverse)
         values.sort(reverse=reverse)
-        next_ic_index = 0
-        while next_ic_index < len(ics):
-            # Remove instance classes with the same number of cores but higher price
-            min_ic = ics[next_ic_index]
-            min_ic_index = next_ic_index
-            last_ic_index = next_ic_index
-            for ic_index in range(next_ic_index+1, len(ics)):
+
+        # After sorting the instance classes, those with the same parameter value are consecutive, so
+        # they form groups [first_ic_index, last_ic_index].
+        first_ic_index = 0
+        while first_ic_index < len(ics):
+            # Find the interval [first_ic_index, last_ic_index] of instance classes with the same parameter value
+            min_ic = ics[first_ic_index]
+            min_ic_index = first_ic_index
+            last_ic_index = first_ic_index
+            for ic_index in range(first_ic_index+1, len(ics)):
                 ic = ics[ic_index]
                 if values[ic_index] == values[min_ic_index]:
                     last_ic_index = ic_index
@@ -68,53 +56,59 @@ class Fcma:
                         min_ic_index = ic_index
                 else:
                     break
+            # Remove all the instance classes with the same parameter value and insert that with the lowest price.
+            # Values are related to instance classes so the same operation must be replicated on values.
             val = values[min_ic_index]
-            del values[next_ic_index:last_ic_index + 1]
-            values.insert(next_ic_index, val)
-            del ics[next_ic_index:last_ic_index+1]
-            ics.insert(next_ic_index, min_ic)
-            next_ic_index += 1
+            del values[first_ic_index:last_ic_index + 1]
+            values.insert(first_ic_index, val)
+            del ics[first_ic_index:last_ic_index + 1]
+            ics.insert(first_ic_index, min_ic)
+            first_ic_index += 1  # Prepare for the next group of instance classes
 
     @staticmethod
     def _get_container_classes(app_family_perfs: dict[tuple[App, InstanceClassFamily], AppFamilyPerf]) \
             -> dict[str, list[ContainerClass, ...]]:
         """
-        Get container classes from application performance data in instance class families.
-        Simplifications are performed to reduce the number of container classes.
-        Returns a dictionary with a list of container classes for each application name
+        Get container classes for each application in the partial ILP problem. Application container classes
+        are simplified removing those that will not participate in the solution.
+        :param app_family_perfs: A dictionary of tuples (application, instance class family) with performance data.
+        :return: A dictionary with a list of container classes for each application name.
         """
         simplified_ics = {}
         result_ccs = {}
         # Get a list of all the instance classes (ics) that must be considered
         for app_fm in app_family_perfs:
-            fm = app_fm[1]  # Application family
-            # Get valid instance classes in the family (fm) for the application
+            fm = app_fm[1]  # Application family (fm)
+            # Get valid ics in the family for the application
             valid_ics = []
             for ic in fm.ics:
-                # Consider ics with enough cores to allocate the minimum required by the application
-                if app_family_perfs[app_fm].cores.magnitude <= ic.cores.magnitude:
+                # Consider ics with enough cores to allocate the cores required by the application
+                if ic.cores.magnitude - app_family_perfs[app_fm].cores.magnitude > 0.000001:
                     valid_ics.append(ic)
 
-            # Remove valid instance classes with the same number of cores but higher price.
-            # Valid instance classes after the call are ordered by increasing number of cores
+            # Simplification 1: remove valid instance classes with the same number of cores but higher price.
+            # Valid instance classes and their cores are sorted by increasing number of cores
             cores = [valid_ic.cores.magnitude for valid_ic in valid_ics]
             Fcma._remove_ics_same_param_higher_price(valid_ics, cores)
 
-            # Add all ics to the simplified list except those that are multiples of smaller ics.
-            # Note that the simplified list contains ics that are valid for at least one application
+            # Simplification 2: add all instance classes to the simplified list except those that
+            # are multiple of smaller instance classes. Note that the simplified list contains instance classes
+            # that are valid for at least one application.
             while len(valid_ics) > 0:
                 min_ic = valid_ics[0]
                 valid_ics_copy = copy.copy(valid_ics)
                 for ic in valid_ics_copy:
+                    # Remove multiples, including the minimum instance class
                     if min_ic.is_multiple(ic):
                         valid_ics.remove(ic)
                 if fm not in simplified_ics:
                     simplified_ics[fm] = []
                 if min_ic not in simplified_ics[fm]:
+                    # Add the minimum instance class
                     simplified_ics[fm].append(min_ic)
 
         # Get a list of container classes (ccs) for each application (app). They come from ics in the
-        # simplified list that have enough cores
+        # simplified list that have enough cores.
         for app_fm in app_family_perfs:
             app = app_fm[0]
             fm = app_fm[1]
@@ -123,10 +117,10 @@ class Fcma:
             for ic in simplified_ics[fm]:
                 # Consider ics with enough cores to allocate the minimum cores required by the app
                 cores = app_family_perfs[app_fm].cores
-                mem = app_family_perfs[app_fm].mem[0]
+                mem = app_family_perfs[app_fm].mem[0]  # Memory for a non-aggregated container is the first value
                 perf = app_family_perfs[app_fm].perf
                 agg = app_family_perfs[app_fm].agg
-                if ic.cores >= cores:
+                if ic.cores.magnitude - cores.magnitude > 0.000001:
                     result_cc = ContainerClass(app=app, ic=ic, fm=ic.family, cores=cores, mem=mem, perf=perf, aggs=agg)
                     result_ccs[app.name].append(result_cc)
 
@@ -135,42 +129,52 @@ class Fcma:
     @staticmethod
     def _get_fm_aggregation_pars(fm: InstanceClassFamily) -> FamilyClassAggPars:
         """
-        Get aggregation parameters for a given instance class family
+        Get aggregation parameters for a given instance class family.
+        :param fm: Instance class family.
+        :return: The parameters to aggregate nodes in the instance class.
         """
 
-        def _get_max_to_try_for(tgt_ic: InstanceClass, origin_ic: InstanceClass,
+        def _get_max_to_try_for(large_ic: InstanceClass, small_ic: InstanceClass,
                                 inter_ic: tuple[InstanceClass, ...]) -> int:
             """
-            Get the maximum number of instances of type origin_ic that can be used to aggregate (with others)
-            into an instance of type target_ic. That number is by default the integer division of the number
-            of cores of the target_ic by the number of cores of ic, but if there are intermediate instance types
-            between origin_ic and target_ic given by inter_ic, the number can be much smaller.
-
+            Get the maximum number of instances of instance class small_ic that can be used to aggregate into an
+            instance class of type large_ic. That number is by default the integer division of the number
+            of cores of large_ic by the number of cores of small_ic, but if there are intermediate instance types
+            in terms of cores between small_ic and large_ic given by inter_ic, the number can be much lower.
             The algorithm checks for each integer between 1 and the aforementioned maximum, if the number of
-            cores of origin_ic multiplied by that integer is in the set of cores of the intermediate instance
+            cores of small_ic multiplied by that integer is in the set of cores of the intermediate instance
             classes. In that case the maximum is the previous integer.
+
+            Chechu. Debería ser "is the previous integer minus 1. No puede haber dos instancias con el misom
+            número de nucleos, luego la operación set es innecesaria. Mirar además la eficiencia.
+
+            :param large_ic: Big instance class in terms of cores.
+            :param large_ic: Origin instance class in aggregations giving the large instance class.
+            :param inter_ic: Instance classes with cores between origin and large instance classes.
+            :return: The maximum number of small nodes in any aggregation giving one large node.
             """
-            max_n = (tgt_ic.cores // origin_ic.cores).magnitude
+            max_n = (large_ic.cores // small_ic.cores).magnitude
             larger_cores = set(val.cores for val in inter_ic)
             for n in range(max_n):
-                if n * origin_ic.cores in larger_cores:
+                if n * small_ic.cores in larger_cores:
                     break
             else:
                 return max_n
             return n - 1
 
-        def _get_aggregations_for(tgt_ic: InstanceClass, small_ics: tuple[InstanceClass, ...]):
+        def _get_aggregations_for(large_ic: InstanceClass, small_ics: tuple[InstanceClass, ...]):
             """
-            For each possible combination of smaller_ics instance classes, find if that combination can be used to sum
-            the number of cores of the target_ic instance class. In that case, yield the number of instances of
-            each type that are needed.
-            The algorithm limits the number of instance classes to test using function _get_max_to_try_for.
+            For each possible combination of small instance classes, find if that combination can be used to sum
+            the number of cores of the large instance class. In that case, yield the number of instances of
+            each class that are needed.
+            "param large_ic: Large instance class after the aggregation.
+            "param small_ics: Small instance classes sorted by increasing number of cores.
             """
             max_to_try = []
             for i_index, ic in enumerate(small_ics):
-                max_to_try.append(_get_max_to_try_for(tgt_ic, ic, small_ics[i_index + 1:]))
+                max_to_try.append(_get_max_to_try_for(large_ic, ic, small_ics[i_index + 1:]))
             for val in itertools.product(*[range(n + 1) for n in max_to_try]):
-                if sum(q_i * ic.cores for q_i, ic in zip(val, small_ics)) == tgt_ic.cores:
+                if sum(q_i * ic.cores for q_i, ic in zip(val, small_ics)) == large_ic.cores:
                     yield val
 
         # Get a tuple with all the instance classes in the family after removing those with the same number of cores,
@@ -185,7 +189,7 @@ class Fcma:
         # for each instance type and a dictionary p_agg with the number of instances of each type that are
         # used in each aggregation.
         n_agg = [0]  # n_agg[i] = number of aggregations for ics[i]
-        p_agg = {}  # p_agg[(i, k, j)] = number of instances of ics[j] in the k-th aggregation of ics[i]
+        p_agg = {}  # p_agg[(i, k, j)] = number of instances of ics[j] in the k-th aggregation to get ics[i]
 
         for i in range(1, len(ics)):
             target_ic = ics[i]
@@ -202,9 +206,12 @@ class Fcma:
     @staticmethod
     def _aggregate_nodes(n_nodes: dict[InstanceClass, int], agg_pars: FamilyClassAggPars) -> FcmaStatus:
         """
-        Aggregate the nodes in n_nodes using the aggregation parameters
+        Aggregate nodes in the same instance class family using the aggregation parameters of the family.
+        The aggregation objective is to reduce the number of nodes, making them larger.
+        :param n_nodes: A dictionary with the number of nodes for each instance class.
+        :param agg_pars: Aggregation parameters for the instance class family.
+        :return: A FCMA pre-allocation status, which can be OPTIMAL, FEASIBLE or INVALID.
         """
-
         # Number of instance classes
         n_ics = len(agg_pars.ic_names)
 
@@ -213,22 +220,23 @@ class Fcma:
         for ic, n in n_nodes.items():
             ic_name_n_nodes[ic.name] = n
 
-        # Get indexes of mi,k terms
+        # Get indexes of mi,k terms from the aggregation parameters
         m_indexes = []
         for i in range(n_ics):
-            if agg_pars.n_agg[i] > 0:
-                for k in range(agg_pars.n_agg[i]):
-                    m_indexes.append((i, k))
+            for k in range(agg_pars.n_agg[i]):
+                m_indexes.append((i, k))
 
-        # Get the agg_path_node_dec(i,k) = summatory of pi,j,k
+        # Get the decrement of nodes for each aggregation path, agg_path_node_dec(i,k) = -1 + summatory of pi,j,k
+        # -1 comes from the target instance class obtained from the aggregation path
         agg_path_node_dec = {}
+        # i = 0 is for the smallest ic in terms of cores, which can not the target aggregation paths
         for i in range(1, n_ics):
             for k in range(agg_pars.n_agg[i]):
                 node_dec = 0
-                for j in range(i):
+                for j in range(i):  # For each smaller instance class
                     if (i, k, j) in agg_pars.p_agg:
                         node_dec += agg_pars.p_agg[(i, k, j)]
-                agg_path_node_dec[(i, k)] = node_dec
+                agg_path_node_dec[(i, k)] = node_dec -1
 
         # Define the ILP problem and variables
         lp_agg_problem = LpProblem("IC_aggregation_problem", LpMaximize)
@@ -236,19 +244,17 @@ class Fcma:
 
         # Objective
         lp_agg_problem += (
-            lpSum((agg_path_node_dec[(i, k)] - 1) * m_vars[(i, k)]
+            lpSum(agg_path_node_dec[(i, k)] * m_vars[(i, k)]
                   for i in range(1, len(agg_pars.n_agg)) for k in range(agg_pars.n_agg[i])),
-            "Minimize_the_total_number_of_nodes_in_family"
+            "The_sum_of_node_decrements"
         )
 
-        # Constraints
-        for j in range(n_ics-1):
-            if agg_pars.ic_names[j] not in ic_name_n_nodes:
-                continue
+        # Constraints. The number of nodes of each instance class after the aggregation can not be negative.
+        for j in range(n_ics-1):  # The largest instance class in terms of cores allways fullfil the constraint
             # Get node increments after the aggregations
             if j > 0:
                 lp_increments = lpSum(m_vars[(j, k)] for k in range(agg_pars.n_agg[j]))
-            else:
+            else:  # The smallest instance class can not have node increments
                 lp_increments = LpAffineExpression(0)
             # Get node decrements after the aggregations
             lp_decrements = LpAffineExpression(0)
@@ -294,60 +300,71 @@ class Fcma:
             for ic in fm.ics:
                 if ic.name in agg_ic_name_n_nodes and agg_ic_name_n_nodes[ic.name] > 0:
                     n_nodes[ic] = agg_ic_name_n_nodes[ic.name]
+
         return status
 
-    def _get_fm_cores_apps(self, app_family_perfs: dict[tuple[App, InstanceClassFamily], AppFamilyPerf]) \
+    def _get_best_fm_apps_cores(self, app_family_perfs: dict[tuple[App, InstanceClassFamily], AppFamilyPerf]) \
             -> dict[InstanceClassFamily, dict]:
         """
-        Get the best families to allocate applications in terms of (req/s)/$. For each family it returns
-        a dictionary with the container classes to allocate and the total number of requiered cores. For example:
-        {
-            m5_r5_c5_fm:    {"apps": [appA, appB], "cores": 12.5},
-            m6g_r6g_c6g_fm: {"apps": [appC, appD], "cores": 10.3}
-        }
+        Get the best families to allocate applications in terms of (req/s)/$. It ignores memory requirements and
+        so ignores instance classes with extended memory. In addition, it assumes that cost of instance classes
+        in the family is (K · cores / min_price_cores), where K is a constant for the family, cores is the number
+        of cores of the instance class and min_price_cores is the number of cores of the cheapest instance class
+        in the family.
+        For each family it returns a dictionary with the applications to execute and the minimum number of
+        required cores. For example: {m5_r5_c5_fm: {"apps": [appA, appB], "cores": 12.5},
+        m6g_r6g_c6g_fm: {"apps": [appC, appD], "cores": 10.3}}
+        :param app_family_perfs: A dictionary of tuples (application, instance class family) with performance data.
+        :return: A dictionary with applications and minimum number of cores for each instance class family.
         """
 
-        # Firstly, for each application get the best family in terms of (req/s)/$ and  the number of cores
-        # to process the application workload
-        best_fm_app_cores = {}
-        families = {}
+        # Get the family price per core from the cheapest instance class
+        fm_price_per_core = {}
+        for app_fm in app_family_perfs:
+            fm = app_fm[1]
+            if fm not in fm_price_per_core:
+                min_price_per_core = None
+                for ic in fm.ics:
+                    ic_price_per_core = ic.price / ic.cores
+                    if min_price_per_core is None or ic_price_per_core < min_price_per_core:
+                        min_price_per_core = ic_price_per_core
+                fm_price_per_core[fm] = min_price_per_core
+
+        # For each application get the best family in terms of (req/s)/$ and also the number of cores
+        # and price to process the application workload
+        best_fm = {}
         for app_fm in app_family_perfs:
             app = app_fm[0]
             fm = app_fm[1]
-            if fm not in families:
-                families[fm] = {"apps": [], "cores": 0}
             # Number of required cores to process the application workload in the instance class family
             n_replicas = ceil((self.workloads[app] / app_family_perfs[app_fm].perf).magnitude)
-            cores = n_replicas * app_family_perfs[app_fm].cores
-            if app not in best_fm_app_cores:
-                best_fm_app_cores[app] = {"fm": fm, "cores": cores}
-            else:
-                min_price_per_req = best_fm_app_cores[app]["fm"].ics[0].price / \
-                                    best_fm_app_cores[app]["fm"].ics[0].cores * app_family_perfs[app_fm].cores
-                price_per_req = fm.ics[0].price / fm.ics[0].cores * app_family_perfs[app_fm].cores
-                if price_per_req < min_price_per_req:
-                    best_fm_app_cores[app] = {"fm": fm, "cores": cores}
+            fm_app_cores = n_replicas * app_family_perfs[app_fm].cores
+            fm_app_price = fm_price_per_core[fm] * fm_app_cores
+            if app not in best_fm:
+                best_fm[app] = {"fm": fm, "cores": fm_app_cores, "price": fm_app_price}
+            elif fm_app_price < best_fm[app]["price"]:
+                best_fm[app]["fm"] = fm
+                best_fm[app]["cores"] = fm_app_cores
+                best_fm[app]["price"] = fm_app_price
 
-        # Get the container classes allocated to each instance class family and the total number of cores
-        for app in best_fm_app_cores:
-            fm = best_fm_app_cores[app]["fm"]
-            families[fm]["apps"].append(app)
-            families[fm]["cores"] += best_fm_app_cores[app]["cores"]
+        # Get applications that should be allocated to each instance class family and the number of required cores
+        family_apps_cores = {}
+        for app in best_fm:
+            fm = best_fm[app]["fm"]
+            if fm not in family_apps_cores:
+                family_apps_cores[fm] = {"apps": [], "cores": 0}
+            family_apps_cores[fm]["apps"].append(app)
+            family_apps_cores[fm]["cores"] += best_fm[app]["cores"]
 
-        return {fm: val for fm, val in families.items() if val["cores"] > 0}
+        return family_apps_cores
 
     def __init__(self, app_family_perfs: dict[tuple[App, InstanceClassFamily], AppFamilyPerf],
-                 workloads: dict[App, RequestsPerTime] = None) -> None:
+                 workloads: dict[App, RequestsPerTime]):
         """
-        Creator of Fast Container to Machine Allocater (FCMA). It provides several levels of speed in
-        the solution of the allocatotion problem:
-        - speed_level = 1. The default speed level. Provides the lowest cost solution, but requires
-        the hihest computation time.
-        - speed_level = 2. Provides an intermediate cost solution and requires also an intermediate
-        computation time.
-        - speed_level = 3. Provides the fastest computation time, but with the highest cost.
+        Constructor of Fast Container to Machine Allocation (FCMA).
+        :param app_family_perfs: A dictionary of tuples (application, instance class family) with performance data.
+        :param workloads: The workload for each application.
         """
-
         self.app_family_perfs = app_family_perfs
         if workloads is not None:
             # Get standard workloads in req/hour
@@ -355,33 +372,30 @@ class Fcma:
             for app, workload in workloads.items():
                 self.workloads[app] = workload.to("req/hour")
 
-        self.vms: dict[InstanceClassFamily, list[Vm]] = {}  # A list of vms for every instance class family
+        # A list of virtual machines (nodes) for every instance class family
+        self.vms: dict[InstanceClassFamily, list[Vm]] = {}
 
-        # -------------  Prepare data for speed_level = 1
-        # Get all the container classes
-        self.ccs = Fcma._get_container_classes(app_family_perfs)
-        # Create instance and container variables from the container classes
-        self._create_vars(self.ccs)
-        # Create the ILP problem
-        self.lp_problem = LpProblem("Container_problem", LpMinimize)
-        self.x_vars = LpVariable.dicts(name="X", indices=self.ic_names, cat=pulp.constants.LpInteger, lowBound=0)
-        self.y_vars = LpVariable.dicts(name="Y", indices=self.cc_names, cat=pulp.constants.LpInteger, lowBound=0)
-        self._create_objective()
-        self._create_core_constraints()
-        if workloads is not None:
-            # Update performance constraints with the new workloads
-            self._update_performance_constraints()
+        # Solving paraeters
+        self.solving_pars = None
 
-        # -------------  Prepare data for speed_level = 2 and speed_level = 3
-        # Get the best instance class family for each application in terms of (req/s)/$ and the number of cores
-        # required to process the application workload
-        self.best_fm_cores_apps = self._get_fm_cores_apps(app_family_perfs)
+        # Variables for speed level 1
+        self.ccs = None  # Container classes
+        self.lp_problem = None  # ILP problem
+        self.x_vars = None  # Number of nodes of each instance class
+        self.y_vars = None  # Number of containers of each application in each instance class
 
+        # Variables for speed levels 2 and 3
+        self.best_fm_cores_apps = None  # Applications and required total cores for each family
+
+        # Statistics of the problem solution
         self.solving_stats = SolvingStats()
 
     def _create_vars(self, ccs: dict[str, list[ContainerClass, ...]]) -> None:
         """
-        Creates the variables for the partial ILP problem
+        Create the variables for the partial ILP problem, which include a list of container class names,
+        a list of instance class names and a dictionary with the instance class associated to each
+        instance class name.
+        :param ccs: Dictionary with a list of container classes for each application name.
         """
         self.cc_names = []
         self.ic_names = []
@@ -401,21 +415,20 @@ class Fcma:
             len(self.cc_names),
         )
 
-    def _create_objective(self) -> None:
+    def _create_objective_and_contraints(self) -> None:
         """
-        Adds the cost function to optimize to the partial ILP problem
+        Add the cost function to optimize to the partial ILP problem.
+        Add core constraints to the partial ILP problem from instance class capacity.
+        Add performance constraints in the ILP problem from the application workloads.
         """
+
+        # Cost function: price of the solution
         self.lp_problem += lpSum(
             self.x_vars[ic_name] * self.ics[ic_name].price.magnitude
             for ic_name in self.ic_names
         )
 
-    def _create_core_constraints(self) -> None:
-        """
-        Adds core constraints to the partial ILP problem
-        """
-
-        # Get a dictionary with a list of container names for every instance class name
+        # Get a dictionary with a list of container class names for every instance class name
         cc_names_ic_name = {}
         for app in self.ccs:
             for cc in self.ccs[app]:
@@ -439,17 +452,12 @@ class Fcma:
                 f"Enough_cores_in_ic_{ic_name}",
             )
 
-    def _update_performance_constraints(self) -> None:
-        """
-        Updates performance constraints in the ILP problem from the application workloads
-        """
-
         # Get a dictionary with all the applications
         apps = {str(self.ccs[app][0].app): self.ccs[app][0].app for app in self.ccs}
 
         # Enough performance
         for app_name in self.ccs:
-            constraint_name = f"Enough_perf_for_{str(app_name)}"
+            constraint_name = f"Enough_performance_for_{str(app_name)}"
             # Remove old constraints
             if constraint_name in self.lp_problem.constraints:
                 del self.lp_problem.constraints[constraint_name]
@@ -459,14 +467,10 @@ class Fcma:
                 >= self.workloads[apps[app_name]].magnitude, constraint_name,
             )
 
-    def _get_fms_sol(self):
+    def _get_fms_sol(self) -> dict[InstanceClassFamily]:
         """
-        For every node class family in the solution of the partial ILP problem get classes and numbers
-        of nodes and containers making up the solution. For example:
-           fms_sol = {
-            c5_m5_r5: {"ics": {ic_1: 10, ic_2: 5}, "ccs": {cc_a: 1, cc_b: 4, cc_c: 15}},
-            c6_m6_r6: {"ics": {ic_3: 6}, "ccs": {cc_d: 7, cc_e: 1, cc_f: 6, cc_g: 1}}
-          }
+        For every instance class family in the solution of the partial ILP problem get the number of nodes
+        of each instance class and the container classes to allocate in the family.
         """
         # Get instance classes in the solution
         ics_sol = {}
@@ -475,7 +479,7 @@ class Fcma:
             if n_nodes > 0:
                 ics_sol[ic_sol_name] = n_nodes
 
-        # Divide instance and containers in the solution into families
+        # Organize instance and containers in the solution in families
         fms_sol = {}
         for ic_sol_name in ics_sol:
             fm = self.ics[ic_sol_name].family
@@ -488,68 +492,76 @@ class Fcma:
                 cc_name = str(cc)
                 n_replicas = int(self.y_vars[cc_name].value())
                 if n_replicas > 0:
-                    cc.ic = False
+                    cc.ic = None
                     fms_sol[cc.fm]["ccs"][cc] = n_replicas
 
         return fms_sol
 
     def _get_fm_nodes_by_division(self) -> dict[InstanceClassFamily, dict[InstanceClass, int]]:
         """
-        Returns the minimum number of nodes of each instance class for the best instance class families
-        in terms of (req/s)/$. Algorithm is based on a sequence of integer divisions
+        Get the minimum number of nodes of each instance class for the best instance class families
+        in terms of (req/s)/$. Algorithm is based on a sequence of integer divisions.
+        :return: The number of nodes of each instance class in each family.
         """
         n_nodes = {}
         for fm in self.best_fm_cores_apps:
             ics = fm.ics.copy()
-            # Remove instance classes with the same number of cores but a higher price
+            # Remove instance classes with the same number of cores but a higher price.
+            # At the same time instance classes are sorted by decreasing number of cores.
             cores = [ic.cores.magnitude for ic in ics]
-            Fcma._remove_ics_same_param_higher_price(ics, cores)
+            Fcma._remove_ics_same_param_higher_price(ics, cores, reverse=True)
             n_cores = int(ceil(self.best_fm_cores_apps[fm]["cores"].magnitude))
             n_nodes[fm] = {}
-            # Sort instance classes by decreasing number of cores
-            ics.sort(key=lambda instance_class: instance_class.cores, reverse=True)
             # The number of nodes of each intance class is obtained through a sequence of integer
             # divisions by the number of instance class cores sorted by decreasing order
             next_ic_index = 0
-            while n_cores > 0:
+            next_ic = ics[next_ic_index]
+            while n_cores > 0 and next_ic_index < len(ics):
                 next_ic = ics[next_ic_index]
                 n = n_cores // next_ic.cores.magnitude
                 if n > 0:
                     n_cores -= n * next_ic.cores.magnitude
                     n_nodes[fm][next_ic] = n
-                elif n == 0 and next_ic_index == len(ics) - 1:
-                    if next_ic in n_nodes[fm]:
-                        n_nodes[fm][next_ic] += 1
-                    else:
-                        n_nodes[fm][next_ic] = 1
-                    n_cores = 0
                 next_ic_index += 1
-                self.solving_stats.before_allocation_status.append(FcmaStatus.FEASIBLE)
+            if n_cores > 0:
+                if next_ic in n_nodes[fm]:
+                    n_nodes[fm][next_ic] += 1
+                else:
+                    n_nodes[fm][next_ic] = 1
+
+        # The solution is always feasible since division algorithm may not be optimal
+        self.solving_stats.pre_allocation_status = FcmaStatus.FEASIBLE
 
         return n_nodes
 
     def _get_fm_nodes_by_ilp(self) -> dict[InstanceClassFamily, dict[InstanceClass, int]]:
         """
         Returns the minimum number of nodes of each instance class for the best instance class families
-        in terms of (req/s)/$. Algorithm is based on solving two simple ILP problems
+        in terms of (req/s)/$. Algorithm is based on solving two simple ILP problems.
+        :return: The number of nodes of each instance class in each family.
         """
         n_nodes = {}
+        problem_status = [FcmaStatus.FEASIBLE]
+
         for fm in self.best_fm_cores_apps:
+            n_nodes[fm] = {}
             ics = fm.ics.copy()
             # Remove instance classes with the same number of cores but a higher price
             cores = [ic.cores.magnitude for ic in ics]
             Fcma._remove_ics_same_param_higher_price(ics, cores)
             n_cores = int(ceil(self.best_fm_cores_apps[fm]["cores"].magnitude))
-            n_nodes[fm] = {}
             # ILP problem variables
             n_vars = LpVariable.dicts(name="N", indices=ics, cat=pulp.constants.LpInteger, lowBound=0)
 
-            # First ILP problem
-            lp_problem1 = LpProblem(f"{str(fm)} Calculate_minimum_cores", LpMinimize)
-            # - Objective: minimize price
-            lp_problem1 += (lpSum(n_vars[ic] * ic.price.magnitude for ic in ics),
+            # First ILP problem. The number of cores in n_cores may be unfeasible. For example, if all the
+            # instance classes hava an even number of cores, it is not possible to get an odd n_cores value.
+            # Thus, firstly we need to calculate the minimum number of cores higher than or equal to n_cores
+            # that may be obtained from the isntance classes in the family.
+            lp_problem1 = LpProblem(f"{str(fm)}_Calculate_minimum_cores", LpMinimize)
+            # - Objective: minimize cores, which is equivalent to minimize price in this approach
+            lp_problem1 += (lpSum(n_vars[ic] * ic.cores.magnitude for ic in ics),
                             f"Minimize_the_number_of_cores_for_{str(fm)}")
-            # - Restrictions; enoughcores
+            # - Restrictions; enough cores
             lp_problem1 += (
                 lpSum(n_vars[ic] * int(ic.cores.magnitude) for ic in ics) >= n_cores,
                 f"Number_of_cores_in_fm_{str(fm)}",
@@ -565,12 +577,13 @@ class Fcma:
                 lp_problem1_status = FcmaStatus.pulp_to_fcma_status(lp_problem1.status, lp_problem1.sol_status)
                 min_cores = round(sum(n_vars[ic].value() * ic.cores.magnitude for ic in ics))
 
-            # Second ILP problem
+            # Second ILP problem. Now it is time to get the minimum number of nodes in the family adding up
+            # min_cores
             if FcmaStatus.is_valid(lp_problem1_status):
-                lp_problem2 = LpProblem(f"{str(fm)} Minimum_number_of_nodes", LpMinimize)
+                lp_problem2 = LpProblem(f"{str(fm)}_Minimum_number_of_nodes", LpMinimize)
                 # - Objective: minimize the number of nodes
                 lp_problem2 += (lpSum(n_vars[ic] for ic in ics), f"Minimize_the_number_of_nodes_in_{str(fm)}")
-                # - Restrictions: the total number of cores must be the calculted in the previous problem
+                # - Restrictions: the total number of cores must be that calculated in previously, min_cores
                 lp_problem2 += (
                     lpSum(n_vars[ic] * int(ic.cores.magnitude) for ic in ics) == min_cores,
                     f"Number_of_cores_in_fm_{str(fm)}",
@@ -583,7 +596,7 @@ class Fcma:
                     # No exceptions
                     lp_problem2_status = FcmaStatus.pulp_to_fcma_status(lp_problem2.status, lp_problem2.sol_status)
                 status = FcmaStatus.get_worst_status([lp_problem1_status, lp_problem2_status])
-                self.solving_stats.before_allocation_status.append(status)
+                problem_status.append(status)
                 if FcmaStatus.is_valid(status):
                     # Get the number of nodes for the instance classes in the family
                     for ic in ics:
@@ -594,73 +607,84 @@ class Fcma:
                     n_nodes[fm] = None
             else:
                 n_nodes[fm] = None
-                self.solving_stats.before_allocation_status.append(lp_problem1_status)
+                problem_status.append(lp_problem1_status)
+
+        # The solution is feasible at most
+
+        self.solving_stats.pre_allocation_status = FcmaStatus.get_worst_status(problem_status)
 
         return n_nodes
 
-    def _add_vms(self, fm: InstanceClassFamily, cc: ContainerClass, n_containers: int) -> None:
+    def _add_vms(self, fm: InstanceClassFamily, cc: ContainerClass, replicas: int) -> None:
         """
         Add the required virtual machines to allocate the containers. Virtual machines must belong to
-        the given family
+        the given family.
+        :param fm: Family of the virtual machines to add.
+        :param cc: Container class of containers.
+        :param replicas: Number of container replicas that must fit in the virtual machines to add.
         """
         # Get the number of containers that could be allocated in an empty node of each instance class in the family
         ics_in_fm = []
         n_allocatable = []
         for ic in fm.ics:
-            vm = Vm(ic, test=True)
-            n = vm.get_allocatable_number(cc)
+            vm = Vm(ic, ignore_ic_index=True)
+            n = vm.get_n_allocatable_cc(cc)
             ics_in_fm.append(ic)
             n_allocatable.append(n)
 
-        # Sort by decreasing number of allocatable containers. Remove those that can allocate the same
+        # Sort by decreasing number of allocatable containers and remove those that can allocate the same
         # number of containers but are more expensive
         Fcma._remove_ics_same_param_higher_price(ics_in_fm, n_allocatable, reverse=True)
         # Allocate using the largest instance classes to avoid a sequence of small virtual machines
-        # that would reduce the probability of allocating containers from next applications.
-        while n_containers > 0:
+        # that would reduce the probability of allocating containers coming from next applications.
+        while replicas > 0:
             index = 0
             for ic in ics_in_fm:
-                n_to_allocate = n_allocatable[index]
-                n_vms = n_containers // n_allocatable[ics_in_fm.index(ic)]
+                n_vms = replicas // n_allocatable[index]
                 if n_vms >= 1:
-                    if index > 0 and n_containers / n_allocatable[ics_in_fm.index(ic)] > 1:
+                    if index > 0 and replicas / n_allocatable[index] > 1:
                         # Use the previous instance class. A single virtual machine is enough.
                         # This option may not be the optimal from the point of view of cost, but
-                        # it is simple and reduce the number of virtual machines
+                        # it is simple and reduce the number of virtual machines.
                         new_vm = Vm(ics_in_fm[index - 1])
                         new_vm.history.append("Added")
-                        new_vm.allocate(cc, n_containers)
-                        n_containers = 0
+                        new_vm.allocate(cc, replicas)
+                        replicas = 0
                         self.vms[fm].append(new_vm)
                     else:
                         for _ in range(n_vms):
                             new_vm = Vm(ic)
                             new_vm.history.append("Added")
-                            new_vm.allocate(cc, n_to_allocate)
-                            n_containers -= n_to_allocate
+                            new_vm.allocate(cc, n_allocatable[index])
+                            replicas -= n_allocatable[index]
                             self.vms[fm].append(new_vm)
                 index += 1
-                if n_containers == 0:
+                if replicas == 0:
                     break
 
     def _allocation_with_promotion_and_addition(self, fm_sol: dict) -> None:
         """
-        Allocates containers to virtual machines in the same family.
-        Containers are given by fm_sol["ccs"] while the number of virtual machines for each
-        instance class is given by fm_sol["n_nodes"]
+        Allocates containers to nodes. Container and nodes come from the pre-allocation phase.
+        Allocation is performed using a variation of First-Fit- Decreasing (FFD) algoritm.
+        Since the given nodes may not be able to allocate the containers, the algorimth can promote
+        or add new nodes, increasing the cost.
+        :param: fm_sol: The solution for a singleinstance class family coming from the pre-allocation phase.
         """
-
+        # Get the instance class family from the pre-allocation solution
         fm = list(fm_sol["n_nodes"].keys())[0].family
+        # The initial list of virtual machines (vms) come from the pre-allocation phase.
+        # All the vms are empty, i.e, do not allocate any container at this time.
         self.vms[fm] = [Vm(ic) for ic in fm_sol["n_nodes"] for _ in range(fm_sol["n_nodes"][ic])]
         vms = self.vms[fm]
 
-        # The number of containers for every container class is converted into a list of tuples sorted by
-        # decreasing number of container cores
+        # The containers that must be allocated to instance classes in the family are previously
+        # sorted by decreasing number of container cores, as required by FFD algorithm.
         ccs = [(cc, n) for cc, n in fm_sol["ccs"].items()]
         ccs.sort(key=lambda cc_n: cc_n[0].cores, reverse=True)
 
+        # For every container class in the solution, cc, we must allocate n_containers
         for cc, n_containers in ccs:
-            # Get the maximum number of containers to meet SFMPL application parameter
+            # Get the maximum number of containers in a vm to meet SFMPL application parameter
             max_containers_in_vm = int(floor(cc.app.sfmpl * self.workloads[cc.app] / cc.perf))
 
             # -------------------- (1) --------------------
@@ -668,86 +692,85 @@ class Fcma:
             # to allocate that maximum, do not allocate any container in the virtual machine.
             # The objective is to reduce load-balancing penalties and increase container aggregation
             # without compromising task SFMPL.
-            # At the same time, two lists of tuples with virtual machine and number of allocatable
-            # containers are obtained. One for the virtual machines that could allocate the
-            # maximum number of containers and another for the rest. Note that at this point the rest
-            # of virtual machines do not allocate any container.
+            # At the same time, two lists of tuples are created with the number of allocatable containers.
+            # One for the virtual machines that allocate the maximum number of containers and another for the rest.
+            # Note that at this point the rest of virtual machines do not allocate any container.
 
-            n_allocatable_max = []
-            n_allocatable_no_max = []
+            allocatable_max = []
+            allocatable_no_max = []
             for vm in vms:
                 # Get how many containers could be allocated, but do not allocate
-                allocatable_containers = vm.get_allocatable_number(cc)
+                allocatable_containers = vm.get_n_allocatable_cc(cc)
                 if allocatable_containers >= max_containers_in_vm:
                     # Only allocate if it is possible to allocate the maximum number of containers
                     vm.allocate(cc, max_containers_in_vm)
-                    if allocatable_containers >= max_containers_in_vm:
-                        n_allocatable_max.append((vm, allocatable_containers - max_containers_in_vm))
+                    allocatable_max.append((vm, allocatable_containers - max_containers_in_vm))
                     n_containers -= max_containers_in_vm
                     if n_containers == 0:
                         break
                 elif allocatable_containers > 0:
-                    n_allocatable_no_max.append((vm, allocatable_containers))
+                    allocatable_no_max.append((vm, allocatable_containers))
             if n_containers == 0:
                 continue  # Allocation of containers in the instance class familiy has ended
 
             # -------------------- (2) --------------------
             # Allocate as much containers as possible in the virtual machines that appear in
             # n_allocatable_no_max, that is, virtual machines that currently do not allocate
-            # containers of the instance class.
+            # containers of the instance class. This way, SFMPL parameter is fulfilled.
 
             # Firstly, sort the allocatable list of vms by decreasing number of allocatable containers
-            n_allocatable_no_max.sort(key=lambda vm_n: vm_n[1], reverse=True)
+            allocatable_no_max.sort(key=lambda vm_n: vm_n[1], reverse=True)
             # Allocate the highest number of ccs to the allocatable vms
-            for allocatable in n_allocatable_no_max:
-                vm = allocatable[0]
-                n = min(allocatable[1], n_containers)
+            for allocatable in allocatable_no_max:
+                vm = allocatable[0]  # Virtual machine to try allocation
+                n = min(allocatable[1], n_containers)  # Maximum number of containers that could be allocated to the vm
                 vm.allocate(cc, n)
                 n_containers -= n
                 if n_containers == 0:
                     break
             if n_containers == 0:
-                continue  # Allocation of containers in the instance class family has ended
+                continue  # Allocation of containers in the instance class cc has ended
 
             # -------------------- (3) --------------------
             # We did our best to fulfill the SFMPL of each application without increasing cost, but cost is
             # the most important, so now allocate as many containers as possible in the virtual machines
-            # with the maximum number of containers. In any case, distribute containers equitably to reduce
-            # the maximum performance loss of a single node failure.
-            n_vms = len(n_allocatable_max)
+            # with the maximum number of containers. In any case, we distribute containers equitably to reduce
+            # the maximum performance loss on a single node failure.
+            n_vms = len(allocatable_max)
             for i in range(n_vms):
-                vm = n_allocatable_max[i][0]
+                vm = allocatable_max[i][0]
                 # Distribute the containers among the current vm and the next vms
                 n_containers_per_vm = ceil(n_containers / (n_vms - i))
-                n = min(n_allocatable_max[i][1], n_containers_per_vm)
+                n = min(allocatable_max[i][1], n_containers_per_vm)
                 vm.allocate(cc, n)
                 n_containers -= n
                 if n_containers == 0:
                     break
             if n_containers == 0:
-                continue  # Allocation of containers in the instance class family has ended
+                continue  # Allocation of containers in the instance class cc has ended
 
             # -------------------- (4) --------------------
-            # Try virtual machine promotion to allocate containers
-            # Note that promotion is not possible when all the vms are the bigger ones in the family
+            # Try virtual machine promotion to allocate containers.
+            # Note that promotion is not possible when all the vms are the largest ones in the family.
             while n_containers > 0:
                 new_vm = Vm.promote_vm(vms, cc)
                 if new_vm is not None:
                     # Allocate as many containers as possible to the new virtual machine
-                    allocatable_containers = new_vm.get_allocatable_number(cc)
+                    allocatable_containers = min(n_containers, new_vm.get_n_allocatable_cc(cc))
                     new_vm.allocate(cc, allocatable_containers)
                     n_containers -= allocatable_containers
                 else:
                     break
 
             # -------------------- (5) --------------------
-            # At this point there is no choice but to add new nodes.
-            self._add_vms(fm, cc, n_containers)
+            if n_containers > 0:
+                # At this point there is no choice but to add new nodes
+                self._add_vms(fm, cc, n_containers)
 
     def container_aggregation(self):
         """
-        Updates the container groups in self.vms replacing several container replicas
-        with a larger one
+        Updates the container groups in the list of virtual machines, self.vms, replacing several container
+        replicas with a larger one.
         """
         for fm in self.vms:
             for vm in self.vms[fm]:
@@ -755,31 +778,22 @@ class Fcma:
                 for cg in vm.cgs:
                     cc = cg.cc  # Container class
                     aggregations = cc.aggregations(cg.replicas)
-                    for replicas, n in aggregations.items():
-                        for _ in range(n):
-                            new_cgs.append(cc * replicas)
+                    for multiplier, replicas in aggregations.items():
+                        new_cgs.append(ContainerGroup(cc * multiplier, replicas))
                 vm.cgs = new_cgs
 
-    def solve(self, solving_pars=None):
+    def solve(self, solving_pars: SolvingPars = None) -> tuple[list[Vm], FcmaStatus]:
         """
-        Solve the containers to nodes allocation problem using FCMA algorithm and the following parameters:
-        - speed_level. One of the following speed levels for the pre-allocation phase:
-            * speed_level = 1. The default speed level. Provides the lowest cost solution, but requires
-            the hihest computation time.
-            * speed_level = 2. Provides an intermediate cost solution and requires also an intermediate
-            computation time.
-            * speed_level = 3. Provides the fastest computation time, but with the highest cost.
-        - partial_ilp_max_seconds. Maximum time in seconds to solve the partial ILP problem.
-          Ignored for speed_level=2,3
-        - max_agg_desagg_seconds. Maximum aggregation time (speed_level=2) o disaggregation time (speed_level=3).
-          Ignored for speed_level=3
+        Solve the container to node allocation problem using FCMA algorithm.
+        :param solving_pars: Parameters of the solver.
+        :returns: The solution to the problem and statistics about the solution.
         """
-
         start_solving_time = current_time()
         self.solving_stats = SolvingStats()
-        if solving_pars is None:
+        self.solving_pars = solving_pars
+        if self.solving_pars is None:
             # Defaut solving parameters
-            solving_pars = SolvingPars()
+            self.solving_pars = SolvingPars()
         self.solving_stats.solving_pars = solving_pars
         speed_level = solving_pars.speed_level
         if speed_level not in [1, 2, 3]:
@@ -789,11 +803,14 @@ class Fcma:
         # Pre-allocation phase with one of the speed levels
         # -----------------------------------------------------------
         fms_sol = {}  # Solution for each family
-        self.solving_stats.before_allocation_status = []
+        self.solving_stats.pre_allocation_status = []
 
         if speed_level == 2 or speed_level == 3:
-            # -------- Pre-allocation phase for speed levels 2 and 3
+            # Get the best instance class family for each application in terms of (req/s)/$ and the number of cores
+            # required to process the application workload
+            self.best_fm_cores_apps = self._get_best_fm_apps_cores(self.app_family_perfs)
 
+            # -------- Pre-allocation phase for speed levels 2 and 3
             if speed_level == 2:
                 fm_nodes = self._get_fm_nodes_by_ilp()
             else:  # Speed level 3
@@ -814,58 +831,74 @@ class Fcma:
                     n_replicas = ceil((self.workloads[app] / cc.perf).magnitude)
                     fms_sol[fm]["ccs"][cc] = n_replicas
 
+        # -------- Pre-allocation phase for speed level 1
         else:
-            # -------- Pre-allocation phase for speed level 1
+            # Prepare the ILP problem
+            # Get all the container classes. This list is reduced to its minimum through simplification processes
+            self.ccs = Fcma._get_container_classes(self. app_family_perfs)
+            # From the container classes create a list of instance class names, self.ic_names, a list of container
+            # class names, self.cc_names, and a dictionary of instance classes, self.ics, indexed by instance
+            # class names.
+            self._create_vars(self.ccs)
+            # Create the partial ILP problem, which ignores memory and aggregate the capacity of all the
+            # nodes in the same instance class.
+            self.lp_problem = LpProblem("Partial_ILP_problem", LpMinimize)
+            self.x_vars = LpVariable.dicts(name="X", indices=self.ic_names, cat=pulp.constants.LpInteger, lowBound=0)
+            self.y_vars = LpVariable.dicts(name="Y", indices=self.cc_names, cat=pulp.constants.LpInteger, lowBound=0)
+            self._create_objective_and_contraints()
 
             # Solve the partial ILP problem. Nodes in the same instance class are considered as a pool of cores and
-            # memory constraints are ignored
+            # memory constraints are ignored.
             start_ilp_time = current_time()
-            self.solving_stats.partial_ilp_status = self._solve_partial_ilp_problem(solving_pars)
+            self.solving_stats.partial_ilp_status = self._solve_partial_ilp_problem()
             self.solving_stats.partial_ilp_seconds = current_time() - start_ilp_time
 
-            # Only valid solutions are aggregated
+            # Aggregate nodes in the solution to improve the probability of allocation success
+            problem_status = []
             if FcmaStatus.is_valid(self.solving_stats.partial_ilp_status):
                 # Get instance classes and container classes in the solution organized by families
                 fms_sol = self._get_fms_sol()
                 # Aggregate nodes for each instance class in the solution
                 for fm in fms_sol:
                     if fm not in Fcma.fm_aggregation_pars:
-                        # Get the familiy aggregation parameters
+                        # Get the family aggregation parameters
                         Fcma.fm_aggregation_pars[fm] = Fcma._get_fm_aggregation_pars(fm)
-                    status = self._aggregate_nodes(fms_sol[fm]["n_nodes"], Fcma.fm_aggregation_pars[fm])
-                    worst_status = FcmaStatus.get_worst_status([self.solving_stats.partial_ilp_status, status])
-                    self.solving_stats.before_allocation_status.append(worst_status)
+                    agg_status = self._aggregate_nodes(fms_sol[fm]["n_nodes"], Fcma.fm_aggregation_pars[fm])
+                    worst_status = FcmaStatus.get_worst_status([self.solving_stats.partial_ilp_status, agg_status])
+                    problem_status.append(worst_status)
+            self.solving_stats.pre_allocation_status = FcmaStatus.get_worst_status(problem_status)
 
-        self.solving_stats.before_allocation_seconds = current_time() - start_solving_time
+        # Update solving statistics for any speed level
+        self.solving_stats.pre_allocation_seconds = current_time() - start_solving_time
         # Calculate the cost before allocation
-        if FcmaStatus.is_valid(self.solving_stats.before_allocation_status):
-            self.solving_stats.before_allocation_cost = CurrencyPerTime("0 usd/hour")
+        if FcmaStatus.is_valid(self.solving_stats.pre_allocation_status):
+            self.solving_stats.pre_allocation_cost = CurrencyPerTime("0 usd/hour")
             for fm in fms_sol:
                 for ic in fms_sol[fm]["n_nodes"]:
-                    self.solving_stats.before_allocation_cost += fms_sol[fm]["n_nodes"][ic] * ic.price
+                    self.solving_stats.pre_allocation_cost += fms_sol[fm]["n_nodes"][ic] * ic.price
 
         # -----------------------------------------------------------
         # Allocation phase is common to all the speed levels
         # -----------------------------------------------------------
         # Start container to virtual machine allocation only when the previous phase is successful
-        if FcmaStatus.is_valid(self.solving_stats.before_allocation_status):
+        if FcmaStatus.is_valid(self.solving_stats.pre_allocation_status):
             # Perform the allocation
             start_time = current_time()
             for fm in fms_sol:
                 self._allocation_with_promotion_and_addition(fms_sol[fm])
             self.solving_stats.allocation_seconds = current_time() - start_time
 
-        # -----------------------------------------------------------
-        # Perform container aggregation
-        # -----------------------------------------------------------
-        self.container_aggregation()
+            # -----------------------------------------------------------
+            # Perform container aggregation
+            # -----------------------------------------------------------
+            self.container_aggregation()
 
         # -----------------------------------------------------------
         # Calculate final statistics
         # -----------------------------------------------------------
         self.solving_stats.total_seconds = current_time() - start_solving_time
         # Allocation is always succesfull, so the final status comes from the previous status
-        self.solving_stats.final_status = FcmaStatus.get_worst_status(self.solving_stats.before_allocation_status)
+        self.solving_stats.final_status = self.solving_stats.pre_allocation_status
         if FcmaStatus.is_valid(self.solving_stats.final_status):
             # Get the final cost, after the allocation
             self.solving_stats.final_cost = CurrencyPerTime("0 usd/hour")
@@ -873,14 +906,17 @@ class Fcma:
                 for ic in fms_sol[fm]["n_nodes"]:
                     self.solving_stats.final_cost += fms_sol[fm]["n_nodes"][ic] * ic.price
 
-    def _solve_partial_ilp_problem(self, solving_pars: SolvingPars) -> SolvingStats:
+        return self.vms, self.solving_stats
+
+    def _solve_partial_ilp_problem(self) -> SolvingStats:
         """
-        Solves the partial ILP problem
+        Solves the partial ILP problem.
+        :return: Statistics of the ILP problem solution.
         """
-        if solving_pars.partial_ilp_max_seconds is None:
+        if self.solving_pars.partial_ilp_max_seconds is None:
             solver = PULP_CBC_CMD(msg=0)
         else:
-            solver = PULP_CBC_CMD(msg=0, timeLimit=solving_pars.partial_ilp_max_seconds)
+            solver = PULP_CBC_CMD(msg=0, timeLimit=self.solving_pars.partial_ilp_max_seconds)
         try:
             self.lp_problem.solve(solver, use_mps=False)
         except PulpSolverError as _:
