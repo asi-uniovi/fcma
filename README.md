@@ -231,9 +231,9 @@ It is ignored by the other solvers. By default, there is no timeout, so _speed_l
 solver could run for unlimited time. 
 
 All the solvers work in two phases:
-- Pre-allocation phase. This phase is different for each solver. For example, the solver selected
+- Pre-allocation phase. This phase is different for each solver. The solver selected
 with _speed_level=1_ firstly solves the partial ILP problem, which ignore memory
-requirements, and next and optimal algorithm of node aggregation. Solvers selected with _speed_level=2_ and 
+requirements, and next implements and optimal algorithm of node aggregation. Solvers selected with _speed_level=2_ and 
 _speed_level=3_ firstly estimate the required number of cores of each instance class family and next
 desaggregate the cores into VMs using different algorithms.
 - Allocation phase. This phase is identical for all the solvers. Tries to allocate container to VMs.
