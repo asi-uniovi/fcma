@@ -3,12 +3,12 @@ A simple example of how to use the Fcma class
 """
 import logging
 from cloudmodel.unified.units import (ComputationalUnits, RequestsPerTime, Storage)
-import aws_eu_west_1
 from fcma import (App, AppFamilyPerf, Fcma, SolvingPars)
 from fcma.visualization import SolutionPrinter
+import aws_eu_west_1
 
 # Set logging level
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 
 # sfmpl is an optional parameter that stands for Single Failure Maximum Performnace Loss.
 # For example, with sfml=0.5, FCMA does it best so that a single node failure does not cause an
@@ -37,7 +37,7 @@ workloads = {
 # is set to a tuple. For example, for agg=(2,) and mem=(Storage("500 mebibytes"), Storage("650 mebibytes")),
 # a single replica requires 500 Mebibytes, but a 2x aggregated replica would require 650 Mebibytes.
 app_family_perfs = {
-    # For family aws_eu_west_1.c5_m5_r5_fm. It includes AWS subfamilies c5, m5 and r5
+    # For family aws_eu_west_1.c5_m5_r5_fm. It includes AWS c5, m5 and r5 instances
     (apps["appA"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
         cores=ComputationalUnits("400 mcores"),
         mem=Storage("500 mebibytes"),
@@ -62,7 +62,7 @@ app_family_perfs = {
         perf=RequestsPerTime("1 req/s"),
     ),
 
-    # For family aws_eu_west_1.c6g_m6g_r6g_fm. It includes AWS subfamilies c6g, m6g and r6g
+    # For family aws_eu_west_1.c6g_m6g_r6g_fm. It includes AWS c6g, m6g and r6g instances
     (apps["appB"], aws_eu_west_1.c6g_m6g_r6g_fm): AppFamilyPerf(
         cores=ComputationalUnits("100 mcores"),
         mem=Storage("250 mebibytes"),
@@ -88,7 +88,7 @@ fcma_problem = Fcma(app_family_perfs, workloads=workloads)
 # Three speed levels are possible: 1, 2 and 3, being speed level 1 the slowest, but the one
 # giving the best cost results. Parameter partial_ilp_max_seconds is applicable only to speed_level=1
 # and limits the time spent on solving the partial ILP problem.
-solving_pars = SolvingPars(speed_level=1, partial_ilp_max_seconds=None)
+solving_pars = SolvingPars(speed_level=1, partial_ilp_max_seconds=10)
 
 # Solve the allocation problem
 alloc, statistics = fcma_problem.solve(solving_pars)

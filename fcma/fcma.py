@@ -791,11 +791,11 @@ class Fcma:
         start_solving_time = current_time()
         self.solving_stats = SolvingStats()
         self.solving_pars = solving_pars
-        if self.solving_pars is None:
+        if solving_pars is None:
             # Defaut solving parameters
             self.solving_pars = SolvingPars()
         self.solving_stats.solving_pars = solving_pars
-        speed_level = solving_pars.speed_level
+        speed_level = self.solving_pars.speed_level
         if speed_level not in [1, 2, 3]:
             raise ValueError("Invalid speed_level value")
 

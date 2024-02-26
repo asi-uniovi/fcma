@@ -109,7 +109,7 @@ class AppFamilyPerf:
             new_mem = tuple(mem_value for _ in range(self.maxagg))
             object.__setattr__(self, "mem", new_mem)
         else:
-            if len(self.mem) != self.maxagg:
+            if len(self.mem) != len(self.agg):
                 raise ValueError(f"Invalid number of memory items in computational parameters")
             new_mem = tuple(mem.to("gibibytes") for mem in self.mem)
             object.__setattr__(self, "mem", new_mem)
@@ -378,14 +378,14 @@ class Vm:
     """
 
     # Virtual machines in the same instance class get an increasing index
-    last_ic_index = {}
+    _last_ic_index = {}
 
     @staticmethod
     def reset_ids():
         """
         Reset the instance class indexes, so the new virtual machine of each instance class will get index 1.
         """
-        Vm.last_ic_index.clear()
+        Vm._last_ic_index.clear()
 
     @staticmethod
     def promote_vm(vms: list[Vm], cc: ContainerClass) -> Vm:
@@ -436,11 +436,11 @@ class Vm:
         self.ic = ic
         # vm id is not set when generating a virtual machine for testing
         if not ignore_ic_index:
-            if ic not in Vm.last_ic_index:
-                Vm.last_ic_index[ic] = 1
+            if ic not in Vm._last_ic_index:
+                Vm._last_ic_index[ic] = 0
             else:
-                Vm.last_ic_index[ic] += 1
-            self.id = Vm.last_ic_index[ic]  # A number for each virtual machine in the same instance class
+                Vm._last_ic_index[ic] += 1
+            self.id = Vm._last_ic_index[ic]  # A number for each virtual machine in the same instance class
         else:
             self.id = None
         self.free_cores = ic.cores  # Free cores

@@ -19,21 +19,21 @@ class SolutionPrinter:
 
     def print(self):
         """ Prints tables and a summary of the solution."""
-        if self.is_infeasible_sol():
+        if self._is_infeasible_sol():
             print(f"Non feasible solution. [bold red]{self.statistics.final_status}")
             return
 
-        print(self.get_ic_table())
-        for table in self.get_app_tables():
+        print(self._get_ic_table())
+        for table in self._get_app_tables():
             print(table)
-        self.print_statistics()
+        self._print_statistics()
 
-    def get_ic_table(self) -> Table:
+    def _get_ic_table(self) -> Table:
         """
         Return a Rich table with information about the instance classes.
         :return: The instance class table.
         """
-        if self.is_infeasible_sol():
+        if self._is_infeasible_sol():
             return Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
 
         table = Table("VM", Column(header="Cost", justify="right"), title="Virtual Machines")
@@ -60,12 +60,12 @@ class SolutionPrinter:
         table.add_row(f"Total: {total_vms}", f"{total_cost:.3f}")
         return table
 
-    def get_app_tables(self) -> list[Table]:
+    def _get_app_tables(self) -> list[Table]:
         """
         For each application returns a Rich table with information about the allocation of its container classes.
         :return: One table with container applications for each application.
         """
-        if self.is_infeasible_sol():
+        if self._is_infeasible_sol():
             return Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
 
         # Get application table rows
@@ -101,7 +101,7 @@ class SolutionPrinter:
 
         return tables
 
-    def print_statistics(self) -> None:
+    def _print_statistics(self) -> None:
         """
         Print solution statistics.
         """
@@ -120,7 +120,7 @@ class SolutionPrinter:
         print(f"Final cost: {self.statistics.final_cost:.2f}")
         print(f"Total spent time: {self.statistics.total_seconds: .3f} seconds")
 
-    def is_infeasible_sol(self) -> bool:
+    def _is_infeasible_sol(self) -> bool:
         """
         Returns True if the solution is infeasible.
         """
