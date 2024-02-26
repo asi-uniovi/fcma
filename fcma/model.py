@@ -535,13 +535,15 @@ class Vm:
         return cheapest_ic
 
 
-@dataclass
+@dataclass(frozen=True)
 class FamilyClassAggPars:
     """
     Represents parameters for instance class aggregation in a family. Each instance class has an index.
     """
     # Instance class names sorted by increasing number of cores.
     ic_names: tuple[str, ...]
+    # Instance class cores
+    ic_cores: tuple[int]
     # Number of aggregation paths for every instance class name. The same length as ic_names
     n_agg: tuple[int, ...]
     # Number of nodes lost for every tuple (large ic index, aggregation path index, small ic index).

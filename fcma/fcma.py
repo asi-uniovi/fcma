@@ -145,22 +145,16 @@ class Fcma:
             cores of small_ic multiplied by that integer is in the set of cores of the intermediate instance
             classes. In that case the maximum is the previous integer.
 
-            Chechu. Debería ser "is the previous integer minus 1. No puede haber dos instancias con el misom
-            número de nucleos, luego la operación set es innecesaria. Mirar además la eficiencia.
-
-            :param large_ic: Big instance class in terms of cores.
-            :param large_ic: Origin instance class in aggregations giving the large instance class.
-            :param inter_ic: Instance classes with cores between origin and large instance classes.
+            :param large_ic: Large instance class in terms of cores.
+            :param small_ic: Small instance class that may participte in aggregations giving the large instance class.
+            :param inter_ic: Instance classes with cores between the samll and large instance classes.
             :return: The maximum number of small nodes in any aggregation giving one large node.
             """
-            max_n = (large_ic.cores // small_ic.cores).magnitude
-            larger_cores = set(val.cores for val in inter_ic)
-            for n in range(max_n):
-                if n * small_ic.cores in larger_cores:
-                    break
-            else:
-                return max_n
-            return n - 1
+            for ic in inter_ic:
+                cores_relation = (ic.cores // small_ic.cores).magnitude
+                if cores_relation * small_ic.cores == ic.cores:
+                    return cores_relation - 1
+            return (large_ic.cores // small_ic.cores).magnitude
 
         def _get_aggregations_for(large_ic: InstanceClass, small_ics: tuple[InstanceClass, ...]):
             """
@@ -185,6 +179,15 @@ class Fcma:
         ics = tuple(fm_ics)
         ic_names = tuple(ic.name for ic in ics)
 
+        # Firstly, search for a family wih the same insatnce class cores, since in that case,
+        # aggregation parameters would be the same.
+        ic_cores = tuple(cores)
+        for fm in Fcma.fm_aggregation_pars:
+            if ic_cores == Fcma.fm_aggregation_pars[fm].ic_cores:
+                n_agg = Fcma.fm_aggregation_pars[fm].n_agg
+                p_agg = Fcma.fm_aggregation_pars[fm].p_agg
+                return FamilyClassAggPars(ic_names, ic_cores, n_agg, p_agg)
+
         # Initialize the solution, which is composed of a dictionary n_aggs with the number of aggregations
         # for each instance type and a dictionary p_agg with the number of instances of each type that are
         # used in each aggregation.
@@ -201,7 +204,7 @@ class Fcma:
                         p_agg[(i, k, j)] = q_j
             n_agg.append(k + 1)
 
-        return FamilyClassAggPars(ic_names, tuple(n_agg), p_agg)
+        return FamilyClassAggPars(ic_names, tuple(cores), tuple(n_agg), p_agg)
 
     @staticmethod
     def _aggregate_nodes(n_nodes: dict[InstanceClass, int], agg_pars: FamilyClassAggPars) -> FcmaStatus:
@@ -782,7 +785,7 @@ class Fcma:
                         new_cgs.append(ContainerGroup(cc * multiplier, replicas))
                 vm.cgs = new_cgs
 
-    def solve(self, solving_pars: SolvingPars = None) -> tuple[list[Vm], FcmaStatus]:
+    def solve(self, solving_pars: SolvingPars = None) -> tuple[list[Vm], SolvingStats]:
         """
         Solve the container to node allocation problem using FCMA algorithm.
         :param solving_pars: Parameters of the solver.
@@ -861,7 +864,7 @@ class Fcma:
                 # Aggregate nodes for each instance class in the solution
                 for fm in fms_sol:
                     if fm not in Fcma.fm_aggregation_pars:
-                        # Get the family aggregation parameters
+                        # Get the family aggregation parameters and update the aggregation parameters in the cache
                         Fcma.fm_aggregation_pars[fm] = Fcma._get_fm_aggregation_pars(fm)
                     agg_status = self._aggregate_nodes(fms_sol[fm]["n_nodes"], Fcma.fm_aggregation_pars[fm])
                     worst_status = FcmaStatus.get_worst_status([self.solving_stats.partial_ilp_status, agg_status])
