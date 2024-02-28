@@ -8,8 +8,15 @@ from dataclasses import dataclass
 from enum import Enum
 import pulp
 from math import floor
-from cloudmodel.unified.units import ComputationalUnits, CurrencyPerTime, RequestsPerTime, Storage
-
+from cloudmodel.unified.units import (
+    ComputationalUnits,
+    Currency,
+    CurrencyPerTime,
+    Time,
+    RequestsPerTime,
+    Storage,
+)
+from cloudmodel.unified.model import App
 
 class FcmaStatus(Enum):
     """
@@ -65,18 +72,6 @@ class FcmaStatus(Enum):
             # The global status is the worst status in the list
             global_status = FcmaStatus.get_worst_status(status)
         return global_status == FcmaStatus.OPTIMAL or global_status == FcmaStatus.FEASIBLE
-
-
-@dataclass(frozen=True)
-class App:
-    """
-    FCMA application.
-    """
-    name: str
-    sfmpl: [float] = 1.0  # Single failure maximum performance loss in (0, 1]
-
-    def __str__(self) -> str:
-        return self.name
 
 
 @dataclass(frozen=True)

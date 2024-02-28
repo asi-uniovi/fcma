@@ -14,12 +14,12 @@ logging.basicConfig(level=logging.INFO)
 # For example, with sfml=0.5, FCMA does it best so that a single node failure does not cause an
 # application performance loss higher than 50 %. SFMPL is a secondary requirement since cost is
 # the most important requirement.
-apps = {
-    "appA": App(name="appA", sfmpl=0.5),
-    "appB": App(name="appB", sfmpl=0.2),
-    "appC": App(name="appC"),
-    "appD": App(name="appD"),
-}
+apps = { a.name: a for a in [
+    App(name="appA", sfmpl=0.5),
+    App(name="appB", sfmpl=0.2),
+    App(name="appC"),
+    App(name="appD"),
+]}
 
 workloads = {
     apps["appA"]: RequestsPerTime("6  req/s"),

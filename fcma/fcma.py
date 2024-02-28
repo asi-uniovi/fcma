@@ -456,7 +456,7 @@ class Fcma:
             )
 
         # Get a dictionary with all the applications
-        apps = {str(self.ccs[app][0].app): self.ccs[app][0].app for app in self.ccs}
+        apps = {self.ccs[app][0].app.name: self.ccs[app][0].app for app in self.ccs}
 
         # Enough performance
         for app_name in self.ccs:
