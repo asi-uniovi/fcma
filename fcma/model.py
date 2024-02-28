@@ -10,9 +10,7 @@ import pulp
 from math import floor
 from cloudmodel.unified.units import (
     ComputationalUnits,
-    Currency,
     CurrencyPerTime,
-    Time,
     RequestsPerTime,
     Storage,
 )
