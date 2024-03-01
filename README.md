@@ -300,8 +300,23 @@ pre-allocation base with _speed_level=1_. This solver executes a node aggregatio
 the partial ILP problem, so this status does not have to match with _pre_allocation_status_.
 
 **9. Optionally, print the results on a terminal.** 
-
+It is possible to print all the results: virtual machines, containers and statistics with method _print_()
 ```python
 SolutionPrinter(alloc, statistics).print()
 ```
+or print individually each result with methods _print_vms()_, _print_containers()_, or _print_statistics()_.
 
+
+**10. Optionally, check the solution.**
+Finally, the validity of the solution could be checked. CPU and memory capacity of the virtual machines
+are check against the CPU and memory requirements of the allocated containers in the solution. In addtion,
+application performance is checked against workloads. Any failed check would generate an assert.
+
+```python
+slack = fcma_problem.check_allocation()
+print("\n----------- Solution check --------------")
+for attr_name in slack.__annotations__:
+    print(f"{attr_name}: {slack.__getattribute__(attr_name): .2f} %")
+print("-----------------------------------------")
+```
+If the check is successful, relative values of surplus CPU, memory, and performance are printed.

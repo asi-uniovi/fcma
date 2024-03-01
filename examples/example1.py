@@ -42,19 +42,19 @@ app_family_perfs = {
         cores=ComputationalUnits("400 mcores"),
         mem=Storage("500 mebibytes"),
         perf=RequestsPerTime("0.4 req/s"),
-        agg=(2,)
+        aggs=(2,)
     ),
     (apps["appB"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
         cores=ComputationalUnits("80 mcores"),
         mem=Storage("200 mebibytes"),
         perf=RequestsPerTime("0.5 req/s"),
-        agg=(2, 4, 8, 12)
+        aggs=(2, 4, 8, 12)
     ),
     (apps["appC"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
         cores=ComputationalUnits("90 mcores"),
         mem=Storage("350 mebibytes"),
         perf=RequestsPerTime("0.2 req/s"),
-        agg=(2, 4, 10)
+        aggs=(2, 4, 10)
     ),
     (apps["appD"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
         cores=ComputationalUnits("8500 mcores"),
@@ -67,13 +67,13 @@ app_family_perfs = {
         cores=ComputationalUnits("100 mcores"),
         mem=Storage("250 mebibytes"),
         perf=RequestsPerTime("0.35 req/s"),
-        agg=(2, 4, 10)
+        aggs=(2, 4, 10)
     ),
     (apps["appC"], aws_eu_west_1.c6g_m6g_r6g_fm): AppFamilyPerf(
         cores=ComputationalUnits("120 mcores"),
         mem=Storage("450 mebibytes"),
         perf=RequestsPerTime("0.4 req/s"),
-        agg=(2, 4, 8)
+        aggs=(2, 4, 8)
     ),
     (apps["appD"], aws_eu_west_1.c6g_m6g_r6g_fm): AppFamilyPerf(
         cores=ComputationalUnits("6500 mcores"),
@@ -88,10 +88,18 @@ fcma_problem = Fcma(app_family_perfs, workloads=workloads)
 # Three speed levels are possible: 1, 2 and 3, being speed level 1 the slowest, but the one
 # giving the best cost results. Parameter partial_ilp_max_seconds is applicable only to speed_level=1
 # and limits the time spent on solving the partial ILP problem.
-solving_pars = SolvingPars(speed_level=1, partial_ilp_max_seconds=10)
+solving_pars = SolvingPars(speed_level=3, partial_ilp_max_seconds=10)
 
 # Solve the allocation problem
 alloc, statistics = fcma_problem.solve(solving_pars)
 
 # Print results
 SolutionPrinter(alloc, statistics).print()
+
+# Check the solution
+slack = fcma_problem.check_allocation()
+print("\n----------- Solution check --------------")
+for attr_name in slack.__annotations__:
+    print(f"{attr_name}: {slack.__getattribute__(attr_name): .2f} %")
+print("-----------------------------------------")
+

@@ -83,7 +83,7 @@ class Fcma:
             valid_ics = []
             for ic in fm.ics:
                 # Consider ics with enough cores to allocate the cores required by the application
-                if ic.cores.magnitude - app_family_perfs[app_fm].cores.magnitude > 0.000001:
+                if ic.cores + delta_cpu > app_family_perfs[app_fm].cores:
                     valid_ics.append(ic)
 
             # Simplification 1: remove valid instance classes with the same number of cores but higher price.
@@ -119,9 +119,9 @@ class Fcma:
                 cores = app_family_perfs[app_fm].cores
                 mem = app_family_perfs[app_fm].mem[0]  # Memory for a non-aggregated container is the first value
                 perf = app_family_perfs[app_fm].perf
-                agg = app_family_perfs[app_fm].agg
-                if ic.cores.magnitude - cores.magnitude > 0.000001:
-                    result_cc = ContainerClass(app=app, ic=ic, fm=ic.family, cores=cores, mem=mem, perf=perf, aggs=agg)
+                aggs = app_family_perfs[app_fm].aggs
+                if ic.cores + delta_cpu > cores:
+                    result_cc = ContainerClass(app=app, ic=ic, fm=ic.family, cores=cores, mem=mem, perf=perf, aggs=aggs)
                     result_ccs[app.name].append(result_cc)
 
         return result_ccs
@@ -413,7 +413,7 @@ class Fcma:
                     self.ic_names.append(ic_name)
 
         logging.info(
-            "There are %d X variables and %d Z variables",
+            "There are %d node variables and %d container-to-node variables in the partial ILP problem",
             len(self.ic_names),
             len(self.cc_names),
         )
@@ -492,11 +492,15 @@ class Fcma:
                 fms_sol[fm]["n_nodes"][self.ics[ic_sol_name]] = ics_sol[ic_sol_name]
         for app in self.ccs:
             for cc in self.ccs[app]:
+                fm = cc.fm
                 cc_name = str(cc)
                 n_replicas = int(self.y_vars[cc_name].value())
                 if n_replicas > 0:
                     cc.ic = None
-                    fms_sol[cc.fm]["ccs"][cc] = n_replicas
+                    if cc not in fms_sol[fm]["ccs"]:
+                        fms_sol[fm]["ccs"][cc] = n_replicas
+                    else:
+                        fms_sol[fm]["ccs"][cc] += n_replicas
 
         return fms_sol
 
@@ -618,20 +622,23 @@ class Fcma:
 
         return n_nodes
 
-    def _add_vms(self, fm: InstanceClassFamily, cc: ContainerClass, replicas: int) -> None:
+    def _add_vms(self, fm: InstanceClassFamily, cc: ContainerClass, replicas: int) -> int:
         """
         Add the required virtual machines to allocate the containers. Virtual machines must belong to
         the given family.
         :param fm: Family of the virtual machines to add.
         :param cc: Container class of containers.
         :param replicas: Number of container replicas that must fit in the virtual machines to add.
+        :return: The number of allocated replicas
         """
+        initial_replicas = replicas
+
         # Get the number of containers that could be allocated in an empty node of each instance class in the family
         ics_in_fm = []
         n_allocatable = []
         for ic in fm.ics:
             vm = Vm(ic, ignore_ic_index=True)
-            n = vm.get_n_allocatable_cc(cc)
+            n = vm.get_max_allocatable_cc(cc)
             ics_in_fm.append(ic)
             n_allocatable.append(n)
 
@@ -651,19 +658,18 @@ class Fcma:
                         # it is simple and reduce the number of virtual machines.
                         new_vm = Vm(ics_in_fm[index - 1])
                         new_vm.history.append("Added")
-                        new_vm.allocate(cc, replicas)
-                        replicas = 0
+                        replicas -= new_vm.allocate(cc, replicas)
                         self.vms[fm].append(new_vm)
                     else:
                         for _ in range(n_vms):
                             new_vm = Vm(ic)
                             new_vm.history.append("Added")
-                            new_vm.allocate(cc, n_allocatable[index])
-                            replicas -= n_allocatable[index]
+                            replicas -= new_vm.allocate(cc, n_allocatable[index])
                             self.vms[fm].append(new_vm)
                 index += 1
                 if replicas == 0:
                     break
+        return initial_replicas - replicas
 
     def _allocation_with_promotion_and_addition(self, fm_sol: dict) -> None:
         """
@@ -683,6 +689,7 @@ class Fcma:
         # The containers that must be allocated to instance classes in the family are previously
         # sorted by decreasing number of container cores, as required by FFD algorithm.
         ccs = [(cc, n) for cc, n in fm_sol["ccs"].items()]
+
         ccs.sort(key=lambda cc_n: cc_n[0].cores, reverse=True)
 
         # For every container class in the solution, cc, we must allocate n_containers
@@ -702,17 +709,19 @@ class Fcma:
             allocatable_max = []
             allocatable_no_max = []
             for vm in vms:
-                # Get how many containers could be allocated, but do not allocate
-                allocatable_containers = vm.get_n_allocatable_cc(cc)
-                if allocatable_containers >= max_containers_in_vm:
+                # Check if the maximum number of containers could be allocated
+                if vm.is_allocatable_cc(cc, max_containers_in_vm):
                     # Only allocate if it is possible to allocate the maximum number of containers
                     vm.allocate(cc, max_containers_in_vm)
-                    allocatable_max.append((vm, allocatable_containers - max_containers_in_vm))
+                    n_allocatable = vm.get_max_allocatable_cc(cc)
+                    allocatable_max.append((vm, n_allocatable))
                     n_containers -= max_containers_in_vm
                     if n_containers == 0:
                         break
-                elif allocatable_containers > 0:
-                    allocatable_no_max.append((vm, allocatable_containers))
+                else:
+                    n_allocatable = vm.get_max_allocatable_cc(cc)
+                    if n_allocatable > 0:
+                        allocatable_no_max.append((vm, n_allocatable))
             if n_containers == 0:
                 continue  # Allocation of containers in the instance class familiy has ended
 
@@ -727,8 +736,7 @@ class Fcma:
             for allocatable in allocatable_no_max:
                 vm = allocatable[0]  # Virtual machine to try allocation
                 n = min(allocatable[1], n_containers)  # Maximum number of containers that could be allocated to the vm
-                vm.allocate(cc, n)
-                n_containers -= n
+                n_containers -= vm.allocate(cc, n)
                 if n_containers == 0:
                     break
             if n_containers == 0:
@@ -745,8 +753,7 @@ class Fcma:
                 # Distribute the containers among the current vm and the next vms
                 n_containers_per_vm = ceil(n_containers / (n_vms - i))
                 n = min(allocatable_max[i][1], n_containers_per_vm)
-                vm.allocate(cc, n)
-                n_containers -= n
+                n_containers -= vm.allocate(cc, n)
                 if n_containers == 0:
                     break
             if n_containers == 0:
@@ -759,16 +766,15 @@ class Fcma:
                 new_vm = Vm.promote_vm(vms, cc)
                 if new_vm is not None:
                     # Allocate as many containers as possible to the new virtual machine
-                    allocatable_containers = min(n_containers, new_vm.get_n_allocatable_cc(cc))
-                    new_vm.allocate(cc, allocatable_containers)
-                    n_containers -= allocatable_containers
+                    allocatable_containers = min(n_containers, new_vm.get_max_allocatable_cc(cc))
+                    n_containers -= new_vm.allocate(cc, allocatable_containers)
                 else:
                     break
 
             # -------------------- (5) --------------------
             if n_containers > 0:
                 # At this point there is no choice but to add new nodes
-                self._add_vms(fm, cc, n_containers)
+                n_containers -= self._add_vms(fm, cc, n_containers)
 
     def container_aggregation(self):
         """
@@ -780,7 +786,7 @@ class Fcma:
                 new_cgs = []
                 for cg in vm.cgs:
                     cc = cg.cc  # Container class
-                    aggregations = cc.aggregations(cg.replicas)
+                    aggregations = cc.get_aggregations(cg.replicas)
                     for multiplier, replicas in aggregations.items():
                         new_cgs.append(ContainerGroup(cc * multiplier, replicas))
                 vm.cgs = new_cgs
@@ -829,7 +835,7 @@ class Fcma:
                         cores=self.app_family_perfs[(app, fm)].cores,
                         mem=self.app_family_perfs[(app, fm)].mem,
                         perf=self.app_family_perfs[(app, fm)].perf,
-                        aggs=self.app_family_perfs[(app, fm)].agg
+                        aggs=self.app_family_perfs[(app, fm)].aggs
                     )
                     n_replicas = ceil((self.workloads[app] / cc.perf).magnitude)
                     fms_sol[fm]["ccs"][cc] = n_replicas
@@ -905,9 +911,9 @@ class Fcma:
         if FcmaStatus.is_valid(self.solving_stats.final_status):
             # Get the final cost, after the allocation
             self.solving_stats.final_cost = CurrencyPerTime("0 usd/hour")
-            for fm in fms_sol:
-                for ic in fms_sol[fm]["n_nodes"]:
-                    self.solving_stats.final_cost += fms_sol[fm]["n_nodes"][ic] * ic.price
+            for fm in self.vms:
+                for vm in self.vms[fm]:
+                    self.solving_stats.final_cost += vm.ic.price
 
         return self.vms, self.solving_stats
 
@@ -929,6 +935,59 @@ class Fcma:
             status = FcmaStatus.pulp_to_fcma_status(self.lp_problem.status, self.lp_problem.sol_status)
 
         return status
+
+    def check_allocation(self) -> AllocationCheck:
+        """
+        Check the solution to the allocation problem. Assertions are generated when solution is invalid.
+        :return: Allocation slacks for CPU, memory and performance.
+        """
+        app_perf = {}
+        vm_unused_cpu = {}
+        vm_unused_mem = {}
+        for fm in self.vms:
+            for vm in self.vms[fm]:
+                ic = vm.ic
+                vm_unused_cpu[vm] = ic.cores
+                vm_unused_mem[vm] = ic.mem
+                for cg in vm.cgs:
+                    cc = cg.cc
+                    replicas = cg.replicas
+                    app = cc.app
+                    if app not in app_perf:
+                        app_perf[app] = cc.perf * replicas
+                    else:
+                        app_perf[app] += cc.perf * replicas
+                    vm_unused_cpu[vm] -= replicas * cc.cores
+                    vm_unused_mem[vm] -= cc.get_mem_from_aggregations(replicas)
+
+        min_unused_cpu = delta_to_zero(min(vm_unused_cpu[vm] / vm.ic.cores for vm in vm_unused_cpu).magnitude)
+        max_unused_cpu = delta_to_zero(max(vm_unused_cpu[vm] / vm.ic.cores for vm in vm_unused_cpu).magnitude)
+        global_unused_cpu = delta_to_zero(sum(vm_unused_cpu[vm] for vm in vm_unused_cpu).magnitude /
+                                              sum(vm.ic.cores for vm in vm_unused_cpu).magnitude)
+        min_unused_mem = delta_to_zero(min(vm_unused_mem[vm] / vm.ic.mem for vm in vm_unused_mem).magnitude)
+        max_unused_mem = delta_to_zero(max(vm_unused_mem[vm] / vm.ic.mem for vm in vm_unused_mem).magnitude)
+        global_unused_mem = delta_to_zero(sum(vm_unused_mem[vm] for vm in vm_unused_mem).magnitude /
+                                              sum(vm.ic.mem for vm in vm_unused_mem).magnitude)
+        min_surplus_perf = delta_to_zero(min((app_perf[app] / self.workloads[app]).magnitude - 1 for app in app_perf))
+        max_surplus_perf = delta_to_zero(max((app_perf[app] / self.workloads[app]).magnitude - 1 for app in app_perf))
+        global_surplus_perf = delta_to_zero(sum(app_perf[app].magnitude for app in app_perf) /
+                                            sum(self.workloads[app].magnitude for app in app_perf) - 1)
+
+        assert min_unused_cpu >= 0, "One virtual machine has not enough cores to allocate its containers"
+        assert min_unused_mem >= 0, "One virtual machine has not enough memory to allocate its containers"
+        assert min_surplus_perf >= 0, "One application has not enough performance to process its workload"
+        
+        return AllocationCheck(
+            min_unused_cpu_percentage = min_unused_cpu * 100,
+            max_unused_cpu_percentage = max_unused_cpu * 100,
+            global_unused_cpu_percentage = global_unused_cpu * 100,
+            min_unused_mem_percentage = min_unused_mem * 100,
+            max_unused_mem_percentage = max_unused_mem * 100,
+            global_unused_mem_percentage = global_unused_mem * 100,
+            min_surplus_perf_percentage = min_surplus_perf * 100,
+            max_surplus_perf_percentage = max_surplus_perf * 100,
+            global_surplus_perf_percentage = global_surplus_perf * 100
+        )
 
 
 def _solve_cbc_patched(self, lp, use_mps=True):

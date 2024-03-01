@@ -8,24 +8,69 @@ from dataclasses import dataclass
 from enum import Enum
 import pulp
 from math import floor
-from cloudmodel.unified.units import ComputationalUnits, CurrencyPerTime, RequestsPerTime, Storage
+from cloudmodel.unified.units import ComputationalUnits, CurrencyPerTime, RequestsPerTime, Storage, Quantity
+
+_delta = 0.000001  # Minimum difference so that two quantities are different
+delta_cpu = ComputationalUnits(f"{_delta} core")  # Maximum CPU cores difference for two "equal" CPU values.
+delta_mem = Storage(f"{_delta} gibibyte")  # Maximum memory gibybytes for two "equal" memory values
+
+
+def are_val_equal(val1: Quantity, val2: Quantity) -> bool:
+    """
+    Compare two quantities for equality.
+    :param val1: First value.
+    :param val2: Second value.
+    :return: True if both quantities are approximately equal and False otherwise.
+    """
+    if abs((val1 - val2).magnitude) < _delta:
+        return True
+    else:
+        return False
+
+
+def delta_to_zero(val: float) -> float:
+    """
+    Round to zero dimentionless values close to zero.
+    :param val: dimentionless value to round.
+    :return: The value or zero, depending on its closeness to zero.
+    """
+    if abs(val) < _delta:
+        return 0.0
+    else:
+        return val
+
+def delta_cpu_to_zero(val_cpu: ComputationalUnits) -> ComputationalUnits:
+    """
+    Round to zero computational values close to zero.
+    :param val_cpu: CPU value to round.
+    :return: The value or zero, depending on its closeness to zero.
+    """
+    if are_val_equal(val_cpu, delta_cpu):
+        return ComputationalUnits("0 core")
+    else:
+        return val_cpu
+
+
+def delta_mem_to_zero(val_mem: Storage) -> Storage:
+    """
+    Round to zero memory values close to zero.
+    :param val_mem: Memory value to round.
+    :return: The value or zero, depending on its closeness to zero.
+    """
+    if are_val_equal(val_mem, delta_mem):
+        return ComputationalUnits("0 core")
+    else:
+        return val_mem
 
 
 class FcmaStatus(Enum):
     """
-    Status of FCMA solutions. Theare are two subsets:
-    - Pre-allocation: OPTIMAL, FEASIBLE or INVALID.
-    - After-allocation: ALLOCATION_OK, ALLOCATION_NOT_ENOUGH_MEM  or ALLOCATION_NOT_ENOUGH_CPU.
+    Status of FCMA solutions.
     """
     # Pre-allocation status sorted from the best to the worst
     OPTIMAL = 1  # Optimal solution
     FEASIBLE = 2  # Feasible but not optimal. After a timeout
     INVALID = 3  # Invalid result
-
-    # After-allocation status
-    ALLOCATION_OK = 10
-    ALLOCATION_NOT_ENOUGH_MEM = 11  # Not enough memory for allocation
-    ALLOCATION_NOT_ENOUGH_CPU = 12  # Not enough CPU for allocation
 
     @staticmethod
     def pulp_to_fcma_status(pulp_problem_status: int, pulp_solution_status: int) -> FcmaStatus:
@@ -89,7 +134,7 @@ class AppFamilyPerf:
     # Memory may be a single value or a list to provide a memory value for each aggregation in [1, maxagg]
     mem: Storage | tuple[Storage, ...]
     # Valid aggregations
-    agg: tuple[int] = (1,)
+    aggs: tuple[int] = (1,)
     # Maximum aggregation value that preserves the performance. An n-container aggregation generates 1 container
     # with (n x cores) and at least (n x perf), with n in [1, maxagg]
     maxagg: int = 1
@@ -99,17 +144,17 @@ class AppFamilyPerf:
         Updates aggregation parameters, checks dimensions are valid and store them in the standard units.
         """
         # Aggregation value 1 is not really an aggregation, but makes program easier
-        if 1 not in self.agg:
-            new_agg = (1,) + self.agg
-            object.__setattr__(self, "agg", new_agg)
-        object.__setattr__(self, "maxagg", self.agg[-1])
+        if 1 not in self.aggs:
+            new_agg = (1,) + self.aggs
+            object.__setattr__(self, "aggs", new_agg)
+        object.__setattr__(self, "maxagg", self.aggs[-1])
         object.__setattr__(self, "cores", self.cores.to("cores"))
         if not isinstance(self.mem, tuple):
             mem_value = self.mem.to("gibibytes")
-            new_mem = tuple(mem_value for _ in range(self.maxagg))
+            new_mem = tuple(mem_value for _ in range(len(self.aggs)))
             object.__setattr__(self, "mem", new_mem)
         else:
-            if len(self.mem) != len(self.agg):
+            if len(self.mem) != len(self.aggs):
                 raise ValueError(f"Invalid number of memory items in computational parameters")
             new_mem = tuple(mem.to("gibibytes") for mem in self.mem)
             object.__setattr__(self, "mem", new_mem)
@@ -171,8 +216,7 @@ class InstanceClass:
         if ic.family != self.family:
             return False
         m = ic.cores / self.cores
-        if m.is_integer() and abs((m * self.mem - ic.mem).magnitude) < 0.000001 and \
-                abs((m * self.price - ic.price).magnitude) < 0.000001:
+        if m.is_integer() and are_val_equal(m * self.mem, ic.mem) and are_val_equal(m * self.price, ic.price):
             return True
         return False
 
@@ -183,7 +227,7 @@ class InstanceClass:
         :param ic: The instance class to compare with.
         :return: True when the given instance class is CPU promoted.
         """
-        if ic.family == self.family and ic.cores > self.cores and abs(1 - self.mem / ic.mem) < 0.000001:
+        if ic.family == self.family and ic.cores > self.cores + delta_cpu and are_val_equal(self.mem, ic.mem):
             return True
         return False
 
@@ -194,7 +238,7 @@ class InstanceClass:
         :param ic: The instance class to compare with.
         :return: True when the given instance class is memory promoted.
         """
-        if ic.family == self.family and ic.cores == self.cores and abs(1 - self.mem / ic.mem) > 0.000001:
+        if ic.family == self.family and are_val_equal(ic.cores, self.cores) and ic.mem > self.mem + delta_mem:
             return True
         return False
 
@@ -285,14 +329,14 @@ class ContainerClass:
         """
         object.__setattr__(self, "cores", self.cores.to("cores"))
         if not isinstance(self.mem, tuple):
-            std_mem = tuple(self.mem.to("gibibytes") for _ in range(self.aggs[-1]))
+            std_mem = tuple(self.mem.to("gibibytes") for _ in range(len(self.aggs)))
         else:
-            if len(self.mem) != self.aggs[-1]:
+            if len(self.mem) != len(self.aggs):
                 if len(self.mem) != 1:
                     raise ValueError(f"Invalid number of memory items in computational parameters")
-                # A single memory value is assumed to be independent of aggregation size until maxagg
+                # A single memory value is assumed to be independent of the aggregation size
                 else:
-                    std_mem = tuple(self.mem[0].to("gibibytes") for _ in range(self.aggs[-1]))
+                    std_mem = tuple(self.mem[0].to("gibibytes") for _ in range(len(self.aggs)))
             else:
                 std_mem = tuple(mem.to("gibibytes") for mem in self.mem)
         object.__setattr__(self, "mem", std_mem)
@@ -325,7 +369,7 @@ class ContainerClass:
         )
         return container
 
-    def aggregations(self, replicas: int) -> dict[int, int]:
+    def get_aggregations(self, replicas: int) -> dict[int, int]:
         """
         Calculate container aggregations for a given number of replicas. For example, 9 replicas may be
         aggregated into 2 containers made of 4 replicas each and 1 container made 1 replica.
@@ -353,7 +397,7 @@ class ContainerClass:
         :return: The memory required if the replicas were aggregated.
         """
         # Firsly, get the aggregations for the given number of replicas
-        n_aggs = self.aggregations(replicas)
+        n_aggs = self.get_aggregations(replicas)
         # Add the memory required by all the aggregations
         mem = Storage("0 gibibytes")
         for agg in n_aggs:
@@ -412,11 +456,8 @@ class Vm:
                     lowest_price = price
         if new_vm_ic is not None:
             new_vm = Vm(new_vm_ic)
-            # Use max to round to zero and avoid values such as -0.00000000001
-            new_vm.free_cores = max(ComputationalUnits("0 core"),
-                                    promoted_vm.free_cores + new_vm.ic.cores - promoted_vm.ic.cores)
-            new_vm.free_mem = max(Storage("0 mebibyte"),
-                                  promoted_vm.free_mem + new_vm.ic.mem - promoted_vm.ic.mem)
+            new_vm.free_cores = delta_cpu_to_zero(promoted_vm.free_cores + new_vm.ic.cores - promoted_vm.ic.cores)
+            new_vm.free_mem = delta_mem_to_zero(promoted_vm.free_mem + new_vm.ic.mem - promoted_vm.ic.mem)
             new_vm.cgs = promoted_vm.cgs
             new_vm.history = copy.deepcopy(promoted_vm.history)
             new_vm.history.append(promoted_vm.ic.name)
@@ -451,22 +492,50 @@ class Vm:
     def __str__(self) -> str:
         return f"{self.ic.name}[{self.id}]"
 
-    def get_n_allocatable_cc(self, cc: ContainerClass) -> int:
+    def is_allocatable_cc(self, cc: ContainerClass, replicas: int) -> bool:
         """
-        Get the number of containers of the instance class that could be allocated.
+        Return if the given number of replicas of the container class ar allocatable
+        in the viruak machine.
         :param cc: Container class.
-        :return: The number of containers that coul be allocated.
+        :param replicas: Number of replicas of the container class.
+        :return: True if allocation is possible and False otherwise.
         """
-        n_from_cpu = floor(self.free_cores / cc.cores)
+        if self.free_cores + delta_cpu < replicas * cc.cores:
+            return False
+        if self.free_mem + delta_mem < cc.get_mem_from_aggregations(replicas):
+            return False
+        return True
+
+    def get_max_allocatable_cc(self, cc: ContainerClass) -> int:
+        """
+        Get the maximum number of containers of the instance class that could be allocated
+        in the virtual machine.
+        :param cc: Container class.
+        :return: The number of replicas that could be allocated.
+        """
+
+        # Get the number of replicas considering only CPU requirements
+        n_from_cpu = floor((self.free_cores + delta_cpu) / cc.cores)
+
+        # We assume that memory requirements may not decrease while increasing aggregation levels,
+        # and in addition, memory/core relation decreases as aggregation increases.
+        # The maximum number of replicas comes from the maximum number of replicas with the highest
+        # aggregation levels.
+        # For example, for agg = 1, 2, 4 and memory values 10, 11, 13, respectively, the maximum
+        # comes from container with aggregation level 4. If there is more memory free then continue
+        # with the previous aggregation level, i.e, 2, and so on
+        free_mem = self.free_mem
         n_from_mem = 0
-        mem_usage = 0
-        while mem_usage <= self.free_mem:
-            if cc.get_mem_from_aggregations(n_from_mem + 1) > self.free_mem:
-                break
-            n_from_mem += 1
-            if n_from_mem >= n_from_cpu:
-                break
-        return min(n_from_cpu, n_from_mem)
+        last_agg_index = len(cc.mem) - 1
+        while free_mem + delta_mem >= cc.mem[last_agg_index]:
+            n_add_replicas = int(floor((free_mem + delta_mem) / cc.mem[last_agg_index]))
+            n_from_mem += n_add_replicas * cc.aggs[last_agg_index]
+            if n_from_mem > n_from_cpu:
+                return n_from_cpu
+            free_mem -= n_add_replicas * cc.mem[last_agg_index]
+            last_agg_index -= 1
+
+        return n_from_mem
 
     def get_container_groups(self, cc: ContainerClass) -> list[ContainerGroup]:
         """
@@ -480,41 +549,57 @@ class Vm:
                 res.append(cg)
         return res
 
-    def allocate(self, cc: ContainerClass, n_replicas: int) -> FcmaStatus:
+    def allocate(self, cc: ContainerClass, n_replicas: int) -> int:
         """
         Try to allocate the given number of replicas of the container class in the virtual machine.
         :param cc: Container class.
         :param n_replicas: The number of replicas of the container class to allocate.
-        :return: The allocation status: ALLOCATION_OK, ALLOCATION_NOT_ENOUGH_MEM, or ALLOCATION_NOT_ENOUGH_CPU.
+        :return: The number of replicas that have been allocated.
         """
-        # Check if there are enough cores
-        if cc.cores * n_replicas > self.free_cores + ComputationalUnits("0.000001 core"):
-            return FcmaStatus.ALLOCATION_NOT_ENOUGH_CPU
+        # Beceause of container aggregation a lower number of containers may not be allocated while
+        # a higher number of containers could be. This paradox comes from the reduced memory requirements
+        # of aggregated containers.
+        n_allocatable_replicas = n_replicas
+        if not self.is_allocatable_cc(cc, n_replicas):
+            max_allocatable_replicas = self.get_max_allocatable_cc(cc)
+            if max_allocatable_replicas < n_replicas:
+                n_allocatable_replicas = max_allocatable_replicas
+                if n_allocatable_replicas == 0:
+                    return 0
+            else:
+                n_allocatable_replicas -= 1
+                while not self.is_allocatable_cc(cc, n_allocatable_replicas):
+                    n_allocatable_replicas -= 1
 
-        # Check if there are enough memory
+        # At this point allocate n_allocatable_replicas
+
+        # Update the free cores
+        self.free_cores = max(ComputationalUnits("0 core"), self.free_cores - cc.cores * n_allocatable_replicas)
+
+        # Update the free memory.
+        # The previous number of total instances of de container class is needed to calculate the new free memory
         cg = self.get_container_groups(cc)
         if len(cg) == 0:
             prev_replicas = 0
         else:
             # Only one container group may contain the containers in the given container class
             prev_replicas = cg[0].replicas
+        current_replicas = prev_replicas + n_allocatable_replicas
         prev_replicas_mem = cc.get_mem_from_aggregations(prev_replicas)
-        all_replicas_mem = cc.get_mem_from_aggregations(n_replicas + prev_replicas)
-        mem_increment = all_replicas_mem - prev_replicas_mem
-        if mem_increment >= self.free_mem + Storage("0.000001 gibibyte"):
-            return FcmaStatus.ALLOCATION_NOT_ENOUGH_MEM
-
-        # At this point allocation is possible, so perform allocation
-        self.free_cores = max(ComputationalUnits("0 core"), self.free_cores - cc.cores * n_replicas)
+        current_replicas_mem = cc.get_mem_from_aggregations(current_replicas)
+        mem_increment = current_replicas_mem - prev_replicas_mem
         self.free_mem = max(Storage("0 mebibyte"), self.free_mem - mem_increment)
+
+        #  Update the container group
         if len(cg) > 0:
-            # Add the replicas to the first container group including the container class
-            cg[0].replicas += n_replicas
+            # Add the replicas to the container group including the container class
+            cg[0].replicas += n_allocatable_replicas
         else:
             # Create a new container group with the replicas
-            cg = ContainerGroup(cc, n_replicas)
+            cg = ContainerGroup(cc, n_allocatable_replicas)
             self.cgs.append(cg)
-        return FcmaStatus.ALLOCATION_OK
+
+        return n_allocatable_replicas
 
     def _cheapest_ic_promotion(self, cc: ContainerClass) -> InstanceClass:
         """
@@ -527,8 +612,8 @@ class Vm:
         cheapest_ic = None
         min_price = None
         for ic in fm.ics:
-            if self.free_cores + ic.cores - self.ic.cores + ComputationalUnits("0.000001 core") >= cc.cores and \
-                    self.free_mem + ic.mem - self.ic.mem + Storage("0.000001 gibibyte") >= cc.mem[0]:
+            if self.free_cores + ic.cores - self.ic.cores + delta_cpu >= cc.cores and \
+                    self.free_mem + ic.mem - self.ic.mem + delta_mem >= cc.mem[0]:
                 if cheapest_ic is None or ic.price < min_price:
                     cheapest_ic = ic
                     min_price = ic.price
@@ -582,3 +667,19 @@ class SolvingStats:
     final_status: FcmaStatus = None  # Final status
     final_cost: CurrencyPerTime = None  # Final cost
     total_seconds: float = None  # Total seconds = pre_allocation_seconds + allocation_seconds
+
+
+@dataclass(frozen=True)
+class AllocationCheck:
+    """
+    Allocation summary in terms of node unused capacities and application surplus performances
+    """
+    min_unused_cpu_percentage: float  # Minimum unused CPU percentage evaluate among all the VMs
+    max_unused_cpu_percentage: float  # Maximum unused CPU percentage evaluate among all the VMs
+    global_unused_cpu_percentage: float  # Unused CPU percentage adding the CPU capacity of all the VMs
+    min_unused_mem_percentage: float  # Minimum unused memory percentage evaluate among all the VMs
+    max_unused_mem_percentage: float  # Maximum unused memory percentage evaluate among all the VMs
+    global_unused_mem_percentage: float  # Unused memory percentage adding the CPU capacity of all the VMs
+    min_surplus_perf_percentage: float  # Minimum surplus performace percentage evaluate among all the apps
+    max_surplus_perf_percentage: float  # Maximum surplus performace percentage evaluate among all the apps
+    global_surplus_perf_percentage: float  # Surplus performance adding the performance of all the apps
