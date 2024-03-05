@@ -239,7 +239,7 @@ class Fcma:
                 for j in range(i):  # For each smaller instance class
                     if (i, k, j) in agg_pars.p_agg:
                         node_dec += agg_pars.p_agg[(i, k, j)]
-                agg_path_node_dec[(i, k)] = node_dec -1
+                agg_path_node_dec[(i, k)] = node_dec - 1
 
         # Define the ILP problem and variables
         lp_agg_problem = LpProblem("IC_aggregation_problem", LpMaximize)
@@ -316,7 +316,7 @@ class Fcma:
         in the family.
         For each family it returns a dictionary with the applications to execute and the minimum number of
         required cores. For example: {m5_r5_c5_fm: {"apps": [appA, appB], "cores": 12.5},
-        m6g_r6g_c6g_fm: {"apps": [appC, appD], "cores": 10.3}}
+        m6g_r6g_c6g_fm: {"apps": [appC, appD], "cores": 10.3}}.
         :param app_family_perfs: A dictionary of tuples (application, instance class family) with performance data.
         :return: A dictionary with applications and minimum number of cores for each instance class family.
         """
@@ -367,18 +367,23 @@ class Fcma:
         Constructor of Fast Container to Machine Allocation (FCMA).
         :param app_family_perfs: A dictionary of tuples (application, instance class family) with performance data.
         :param workloads: The workload for each application.
+        :raises ValueError: When some input check fails.
         """
+
         self.app_family_perfs = app_family_perfs
-        if workloads is not None:
-            # Get standard workloads in req/hour
-            self.workloads = {}
-            for app, workload in workloads.items():
-                self.workloads[app] = workload.to("req/hour")
+        self.workloads = workloads
+
+        # Check app_family_perfs and workloads
+        self.check_inputs()
+
+        # Workloads to req/hour
+        for app, workload in self.workloads.items():
+            self.workloads[app] = workload.to("req/hour")
 
         # A list of virtual machines (nodes) for every instance class family
         self.vms: dict[InstanceClassFamily, list[Vm]] = {}
 
-        # Solving paraeters
+        # Solving parameters
         self.solving_pars = None
 
         # Variables for speed level 1
@@ -392,6 +397,47 @@ class Fcma:
 
         # Statistics of the problem solution
         self.solving_stats = SolvingStats()
+
+    def check_inputs(self):
+        """
+        Check workloads and performance data.
+        """
+        try:
+            if not isinstance(self.workloads, dict):
+                raise ValueError
+            workload_apps = self.workloads.keys()
+            for app in workload_apps:
+                if not isinstance(app, App):
+                    raise ValueError
+                self.workloads[app].to("req/hour")  # It generates an exception when it is not a RequestPerTime
+        except Exception as _:
+            raise ValueError(f"Workloads must be a dict[{App.__name__}, {RequestsPerTime.__name__}]")
+
+        try:
+            if not isinstance(self.app_family_perfs, dict):
+                raise ValueError
+            perf_apps_fms = self.app_family_perfs.keys()
+            perf_apps = set()
+            for perf_app_fm in perf_apps_fms:
+                app = perf_app_fm[0]
+                perf_apps.add(app)
+                if not isinstance(app, App):
+                    raise ValueError
+                fm = perf_app_fm[1]
+                if not isinstance(fm, InstanceClassFamily):
+                    raise ValueError
+                if not isinstance(self.app_family_perfs[perf_app_fm], AppFamilyPerf):
+                    raise ValueError
+        except Exception as _:
+            raise ValueError(f"App family performances must be a dict[({App.__name__},"
+                             f"{InstanceClassFamily.__name__}), {AppFamilyPerf.__name__}]")
+
+        for app in perf_apps:
+            if app not in self.workloads:
+                raise ValueError(f"{app.name} has no workload")
+        for app in workload_apps:
+            if app not in perf_apps:
+                raise ValueError(f"{app.name} has no performance parameters")
 
     def _create_vars(self, ccs: dict[str, list[ContainerClass, ...]]) -> None:
         """
@@ -504,20 +550,23 @@ class Fcma:
 
         return fms_sol
 
-    def _get_fm_nodes_by_division(self) -> dict[InstanceClassFamily, dict[InstanceClass, int]]:
+    @staticmethod
+    def _get_fm_nodes_by_division(best_fm_cores_apps: dict[InstanceClassFamily, any]) \
+            -> dict[InstanceClassFamily, dict[InstanceClass, int]]:
         """
         Get the minimum number of nodes of each instance class for the best instance class families
         in terms of (req/s)/$. Algorithm is based on a sequence of integer divisions.
+        :best_fm_cores_apps: A dictionary with the number of cores and containers for each instance class family.
         :return: The number of nodes of each instance class in each family.
         """
         n_nodes = {}
-        for fm in self.best_fm_cores_apps:
+        for fm in best_fm_cores_apps:
             ics = fm.ics.copy()
             # Remove instance classes with the same number of cores but a higher price.
             # At the same time instance classes are sorted by decreasing number of cores.
             cores = [ic.cores.magnitude for ic in ics]
             Fcma._remove_ics_same_param_higher_price(ics, cores, reverse=True)
-            n_cores = int(ceil(self.best_fm_cores_apps[fm]["cores"].magnitude))
+            n_cores = int(ceil(best_fm_cores_apps[fm]["cores"].magnitude))
             n_nodes[fm] = {}
             # The number of nodes of each intance class is obtained through a sequence of integer
             # divisions by the number of instance class cores sorted by decreasing order
@@ -535,9 +584,6 @@ class Fcma:
                     n_nodes[fm][next_ic] += 1
                 else:
                     n_nodes[fm][next_ic] = 1
-
-        # The solution is always feasible since division algorithm may not be optimal
-        self.solving_stats.pre_allocation_status = FcmaStatus.FEASIBLE
 
         return n_nodes
 
@@ -622,16 +668,17 @@ class Fcma:
 
         return n_nodes
 
-    def _add_vms(self, fm: InstanceClassFamily, cc: ContainerClass, replicas: int) -> int:
+    def _add_vms(self, fm: InstanceClassFamily, cc: ContainerClass, replicas: int) -> tuple[list[Vm], int]:
         """
         Add the required virtual machines to allocate the containers. Virtual machines must belong to
         the given family.
         :param fm: Family of the virtual machines to add.
         :param cc: Container class of containers.
         :param replicas: Number of container replicas that must fit in the virtual machines to add.
-        :return: The number of allocated replicas
+        :return: The added virtual machines and the number of allocated replicas.
         """
         initial_replicas = replicas
+        vms = []
 
         # Get the number of containers that could be allocated in an empty node of each instance class in the family
         ics_in_fm = []
@@ -665,26 +712,26 @@ class Fcma:
                             new_vm = Vm(ic)
                             new_vm.history.append("Added")
                             replicas -= new_vm.allocate(cc, n_allocatable[index])
-                            self.vms[fm].append(new_vm)
+                            vms.append(new_vm)
                 index += 1
                 if replicas == 0:
                     break
-        return initial_replicas - replicas
+        return vms, initial_replicas - replicas
 
-    def _allocation_with_promotion_and_addition(self, fm_sol: dict) -> None:
+    def _allocation_with_promotion_and_addition(self, fm_sol: dict) -> list[Vm]:
         """
         Allocates containers to nodes. Container and nodes come from the pre-allocation phase.
         Allocation is performed using a variation of First-Fit- Decreasing (FFD) algoritm.
         Since the given nodes may not be able to allocate the containers, the algorimth can promote
         or add new nodes, increasing the cost.
         :param: fm_sol: The solution for a singleinstance class family coming from the pre-allocation phase.
+        :return: A list with the virtual machines after the allocation
         """
         # Get the instance class family from the pre-allocation solution
         fm = list(fm_sol["n_nodes"].keys())[0].family
         # The initial list of virtual machines (vms) come from the pre-allocation phase.
         # All the vms are empty, i.e, do not allocate any container at this time.
-        self.vms[fm] = [Vm(ic) for ic in fm_sol["n_nodes"] for _ in range(fm_sol["n_nodes"][ic])]
-        vms = self.vms[fm]
+        vms = [Vm(ic) for ic in fm_sol["n_nodes"] for _ in range(fm_sol["n_nodes"][ic])]
 
         # The containers that must be allocated to instance classes in the family are previously
         # sorted by decreasing number of container cores, as required by FFD algorithm.
@@ -774,7 +821,11 @@ class Fcma:
             # -------------------- (5) --------------------
             if n_containers > 0:
                 # At this point there is no choice but to add new nodes
-                n_containers -= self._add_vms(fm, cc, n_containers)
+                added_vms, allocated_containers = self._add_vms(fm, cc, n_containers)
+                vms.extend(added_vms)
+                n_containers -= allocated_containers
+
+        return vms
 
     def container_aggregation(self):
         """
@@ -790,6 +841,54 @@ class Fcma:
                     for multiplier, replicas in aggregations.items():
                         new_cgs.append(ContainerGroup(cc * multiplier, replicas))
                 vm.cgs = new_cgs
+
+    def _get_last_promotion_cost(self, fm: InstanceClassFamily) -> CurrencyPerTime:
+        """
+        Get the total cost increment of the last promotion performed on each virtual machine of a family.
+        :param fm: Instance class family of the virtual machines.
+        :return: The total cost of promotions
+        """
+        cost = CurrencyPerTime("0 usd/hour")
+        for vm in self.vms[fm]:
+            if vm.vm_before_promotion is not None:
+                cost += vm.ic.price - vm.vm_before_promotion.ic.price
+        return cost
+
+    def _optimize_vm_addition(self, fm: InstanceClassFamily) -> tuple[CurrencyPerTime, list[Vm]]:
+        """
+        Re-allocate replicas previously allocated to virtual machines after their last promotion.
+        Now they are allocated to added virtual machines.
+        :param fm: Instance class family of the virtual machines.
+        :return: A tuple with the cost of the new allocation and a list of new virtual machines with
+        the allocated replicas.
+        """
+        # Get replicas to allocate
+        replicas = {}
+        for vm in self.vms[fm]:
+            if vm.cc_after_promotion is not None:
+                for cc in vm.cc_after_promotion:
+                    if cc not in replicas:
+                        replicas[cc] = vm.cc_after_promotion[cc]
+                    else:
+                        replicas[cc] += vm.cc_after_promotion[cc]
+
+        # Now it is a problem analogous to that solved with speed_level=3
+        fm_cores_apps = {fm: {"apps": [], "cores": ComputationalUnits("0 core")}}
+        for cc in replicas:
+            app = cc.app
+            if app not in fm_cores_apps[fm]["apps"]:
+                fm_cores_apps[fm]["apps"].append(app)
+            fm_cores_apps[fm]["cores"] += cc.cores * replicas[cc]
+        fm_nodes = self._get_fm_nodes_by_division(fm_cores_apps)
+        n_nodes_ccs = {"n_nodes": fm_nodes[fm], "ccs": replicas}
+        vms = self._allocation_with_promotion_and_addition(n_nodes_ccs)
+
+        # Calculate the allocation cost
+        cost = CurrencyPerTime("0 usd/hour")
+        for vm in vms:
+            cost += vm.ic.price
+
+        return cost, vms
 
     def solve(self, solving_pars: SolvingPars = None) -> tuple[list[Vm], SolvingStats]:
         """
@@ -823,7 +922,9 @@ class Fcma:
             if speed_level == 2:
                 fm_nodes = self._get_fm_nodes_by_ilp()
             else:  # Speed level 3
-                fm_nodes = self._get_fm_nodes_by_division()
+                fm_nodes = Fcma._get_fm_nodes_by_division(self.best_fm_cores_apps)
+                # The solution is always feasible forsince division algorithm may not be optimal
+                self.solving_stats.pre_allocation_status = FcmaStatus.FEASIBLE
             for fm in self.best_fm_cores_apps:
                 if fm not in fms_sol:
                     fms_sol[fm] = {"n_nodes": fm_nodes[fm], "ccs": {}}
@@ -894,7 +995,27 @@ class Fcma:
             # Perform the allocation
             start_time = current_time()
             for fm in fms_sol:
-                self._allocation_with_promotion_and_addition(fms_sol[fm])
+
+                self.vms[fm] = self._allocation_with_promotion_and_addition(fms_sol[fm])
+
+                # Until now promotion was prefered to node addition, because aggregating CPU and memory
+                # capacities makes future allocations easier. However, when the promotion is the last
+                # for a given virtual machine, we can try virtual machine addition and compare the costs.
+                if self.solving_pars.speed_level in [1, 2]:
+                    # Get the cost coming from the last promotion of each virtual machine
+                    last_promotion_cost = self._get_last_promotion_cost(fm)
+                    if last_promotion_cost > CurrencyPerTime("0 usd/hour"):
+                        # Get virtual machines and cost that would come from virtual machine addition for
+                        # the same containers allocated after the last promotion in each virtual machines.
+                        addition_cost, added_vms = self._optimize_vm_addition(fm)
+                        # If addition gives a lower cost
+                        if last_promotion_cost > addition_cost:
+                            # Undo the last promotion in each virtual machine
+                            for i in range(len(self.vms[fm])):
+                                self.vms[fm][i] = self.vms[fm][i].vm_before_promotion
+                            # Append the virtual machines coming from the addition alternative
+                            self.vms[fm].extend(added_vms)
+
             self.solving_stats.allocation_seconds = current_time() - start_time
 
             # -----------------------------------------------------------
@@ -963,11 +1084,11 @@ class Fcma:
         min_unused_cpu = delta_to_zero(min(vm_unused_cpu[vm] / vm.ic.cores for vm in vm_unused_cpu).magnitude)
         max_unused_cpu = delta_to_zero(max(vm_unused_cpu[vm] / vm.ic.cores for vm in vm_unused_cpu).magnitude)
         global_unused_cpu = delta_to_zero(sum(vm_unused_cpu[vm] for vm in vm_unused_cpu).magnitude /
-                                              sum(vm.ic.cores for vm in vm_unused_cpu).magnitude)
+                                          sum(vm.ic.cores for vm in vm_unused_cpu).magnitude)
         min_unused_mem = delta_to_zero(min(vm_unused_mem[vm] / vm.ic.mem for vm in vm_unused_mem).magnitude)
         max_unused_mem = delta_to_zero(max(vm_unused_mem[vm] / vm.ic.mem for vm in vm_unused_mem).magnitude)
         global_unused_mem = delta_to_zero(sum(vm_unused_mem[vm] for vm in vm_unused_mem).magnitude /
-                                              sum(vm.ic.mem for vm in vm_unused_mem).magnitude)
+                                          sum(vm.ic.mem for vm in vm_unused_mem).magnitude)
         min_surplus_perf = delta_to_zero(min((app_perf[app] / self.workloads[app]).magnitude - 1 for app in app_perf))
         max_surplus_perf = delta_to_zero(max((app_perf[app] / self.workloads[app]).magnitude - 1 for app in app_perf))
         global_surplus_perf = delta_to_zero(sum(app_perf[app].magnitude for app in app_perf) /
@@ -976,17 +1097,17 @@ class Fcma:
         assert min_unused_cpu >= 0, "One virtual machine has not enough cores to allocate its containers"
         assert min_unused_mem >= 0, "One virtual machine has not enough memory to allocate its containers"
         assert min_surplus_perf >= 0, "One application has not enough performance to process its workload"
-        
+
         return AllocationCheck(
-            min_unused_cpu_percentage = min_unused_cpu * 100,
-            max_unused_cpu_percentage = max_unused_cpu * 100,
-            global_unused_cpu_percentage = global_unused_cpu * 100,
-            min_unused_mem_percentage = min_unused_mem * 100,
-            max_unused_mem_percentage = max_unused_mem * 100,
-            global_unused_mem_percentage = global_unused_mem * 100,
-            min_surplus_perf_percentage = min_surplus_perf * 100,
-            max_surplus_perf_percentage = max_surplus_perf * 100,
-            global_surplus_perf_percentage = global_surplus_perf * 100
+            min_unused_cpu_percentage=min_unused_cpu * 100,
+            max_unused_cpu_percentage=max_unused_cpu * 100,
+            global_unused_cpu_percentage=global_unused_cpu * 100,
+            min_unused_mem_percentage=min_unused_mem * 100,
+            max_unused_mem_percentage=max_unused_mem * 100,
+            global_unused_mem_percentage=global_unused_mem * 100,
+            min_surplus_perf_percentage=min_surplus_perf * 100,
+            max_surplus_perf_percentage=max_surplus_perf * 100,
+            global_surplus_perf_percentage=global_surplus_perf * 100
         )
 
 

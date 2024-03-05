@@ -10,9 +10,9 @@ import pulp
 from math import floor
 from cloudmodel.unified.units import ComputationalUnits, CurrencyPerTime, RequestsPerTime, Storage, Quantity
 
-_delta = 0.000001  # Minimum difference so that two quantities are different
-delta_cpu = ComputationalUnits(f"{_delta} core")  # Maximum CPU cores difference for two "equal" CPU values.
-delta_mem = Storage(f"{_delta} gibibyte")  # Maximum memory gibybytes for two "equal" memory values
+delta_val = 0.000001  # Minimum difference so that two quantities are different
+delta_cpu = ComputationalUnits(f"{delta_val} core")  # Maximum CPU cores difference for two "equal" CPU values.
+delta_mem = Storage(f"{delta_val} gibibyte")  # Maximum memory gibybytes for two "equal" memory values
 
 
 def are_val_equal(val1: Quantity, val2: Quantity) -> bool:
@@ -22,7 +22,7 @@ def are_val_equal(val1: Quantity, val2: Quantity) -> bool:
     :param val2: Second value.
     :return: True if both quantities are approximately equal and False otherwise.
     """
-    if abs((val1 - val2).magnitude) < _delta:
+    if abs((val1 - val2).magnitude) < delta_val:
         return True
     else:
         return False
@@ -34,10 +34,11 @@ def delta_to_zero(val: float) -> float:
     :param val: dimentionless value to round.
     :return: The value or zero, depending on its closeness to zero.
     """
-    if abs(val) < _delta:
+    if abs(val) < delta_val:
         return 0.0
     else:
         return val
+
 
 def delta_cpu_to_zero(val_cpu: ComputationalUnits) -> ComputationalUnits:
     """
@@ -120,6 +121,16 @@ class App:
     name: str
     sfmpl: [float] = 1.0  # Single failure maximum performance loss in (0, 1]
 
+    def __post_init__(self):
+        """
+        Check the application parameters.
+        :raise ValueError: When parameters are invalid.
+        """
+        if not isinstance(self.name, str):
+            raise ValueError("App name must be a string")
+        if self.sfmpl != 1 and not isinstance(self.sfmpl, float) or self.sfmpl < 0 or self.sfmpl > 1.0:
+            raise ValueError("App's SFMPL must be a float in range (0, 1]")
+
     def __str__(self) -> str:
         return self.name
 
@@ -142,25 +153,62 @@ class AppFamilyPerf:
     def __post_init__(self):
         """
         Updates aggregation parameters, checks dimensions are valid and store them in the standard units.
+        :raise ValueError: When parameters are invalid.
         """
-        # Aggregation value 1 is not really an aggregation, but makes program easier
+        # Check and convert cores
+        try:
+            object.__setattr__(self, "cores", self.cores.to("cores"))
+        except Exception as _:
+            raise ValueError("Invalid value of cores")
+        if self.cores.magnitude <= 0.0:
+            raise ValueError("Core values must be possitive")
+
+        # Check and convert performances
+        try:
+            object.__setattr__(self, "perf", self.perf.to("req/hour"))
+        except Exception as _:
+            raise ValueError("Invalid value of performance")
+        if self.perf <= 0.0:
+            raise ValueError("Performance values must be possitive")
+
+        # Check aggregations
+        if not isinstance(self.aggs, tuple):
+            raise ValueError(f"Aggregations must be expressed as a tuple")
+        # Aggregation value 1 is not really an aggregation, but helps programming
         if 1 not in self.aggs:
-            new_agg = (1,) + self.aggs
-            object.__setattr__(self, "aggs", new_agg)
+            new_aggs = (1,) + self.aggs
+            object.__setattr__(self, "aggs", new_aggs)
         object.__setattr__(self, "maxagg", self.aggs[-1])
-        object.__setattr__(self, "cores", self.cores.to("cores"))
+        prev_agg = 0
+        for agg_value in self.aggs:
+            if not isinstance(agg_value, int) or agg_value <= prev_agg:
+                raise ValueError(f"Aggregations must be possitive integers sorted by increasing value")
+            prev_agg = agg_value
+
+        # Check and convert memory
         if not isinstance(self.mem, tuple):
-            mem_value = self.mem.to("gibibytes")
-            new_mem = tuple(mem_value for _ in range(len(self.aggs)))
-            object.__setattr__(self, "mem", new_mem)
+            new_mem = tuple(self.mem for _ in range(len(self.aggs)))
         else:
             if len(self.mem) != len(self.aggs):
-                raise ValueError(f"Invalid number of memory items in computational parameters")
-            new_mem = tuple(mem.to("gibibytes") for mem in self.mem)
-            object.__setattr__(self, "mem", new_mem)
-        object.__setattr__(self, "perf", self.perf.to("req/hour"))
+                raise ValueError(f"Invalid number of memory items")
+            new_mem = self.mem
+        for mem_value in new_mem:
+            try:
+                mem_value = mem_value.to("gibibytes")
+            except Exception as _:
+                raise ValueError("Invalid value of memory")
+        prev_mem_agg = new_mem[0] / self.aggs[0]
+        for index in range(1, len(new_mem)):
+            if new_mem[index].magnitude <= 0.0:
+                raise ValueError("Memory values must be possitive")
+            mem_agg = new_mem[index] / self.aggs[index]
+            if mem_agg > prev_mem_agg:
+                raise ValueError("Memory requirements must decrease with higher aggregation values")
+            prev_mem_agg = mem_agg
+        object.__setattr__(self, "mem", new_mem)
 
 
+# It can not be frozen because it is possible to change its nameduring its initialization
 @dataclass
 class InstanceClass:
     """
@@ -202,7 +250,7 @@ class InstanceClass:
         """
         Set the instance class name.
         :param name: New name for the instance class.
-        :return: The new name.
+        :return: The instance class.
         """
         self.name = name
         return self
@@ -459,8 +507,14 @@ class Vm:
             new_vm.free_cores = delta_cpu_to_zero(promoted_vm.free_cores + new_vm.ic.cores - promoted_vm.ic.cores)
             new_vm.free_mem = delta_mem_to_zero(promoted_vm.free_mem + new_vm.ic.mem - promoted_vm.ic.mem)
             new_vm.cgs = promoted_vm.cgs
-            new_vm.history = copy.deepcopy(promoted_vm.history)
+            promoted_vm.cgs = copy.deepcopy(promoted_vm.cgs)
+            new_vm.history = promoted_vm.history
+            promoted_vm.history = copy.deepcopy(promoted_vm.history)
             new_vm.history.append(promoted_vm.ic.name)
+            promoted_vm.vm_before_promotion = None
+            promoted_vm.cc_after_promotion = None
+            new_vm.vm_before_promotion = promoted_vm
+            new_vm.cc_after_promotion = {}
             index_promoted_vm = vms.index(promoted_vm)
             vms[index_promoted_vm] = new_vm
             return new_vm
@@ -488,6 +542,8 @@ class Vm:
         self.free_mem = ic.mem  # Free memory
         self.cgs: list[ContainerGroup] = []  # The list of container groups allocated is empty
         self.history: list[str] = []  # Virtual machine history filled with vm promotions and additions
+        self.vm_before_promotion: Vm = None  # This VM before its last promotion
+        self.cc_after_promotion: dict[ContainerClass, int] = None  # Containers allocated after the last promotion
 
     def __str__(self) -> str:
         return f"{self.ic.name}[{self.id}]"
@@ -517,8 +573,8 @@ class Vm:
         # Get the number of replicas considering only CPU requirements
         n_from_cpu = floor((self.free_cores + delta_cpu) / cc.cores)
 
-        # We assume that memory requirements may not decrease while increasing aggregation levels,
-        # and in addition, memory/core relation decreases as aggregation increases.
+        # We assume that memory requirements per core decreases as aggregation increases, so the
+        # greater the container aggregation, the lower the memory requested.
         # The maximum number of replicas comes from the maximum number of replicas with the highest
         # aggregation levels.
         # For example, for agg = 1, 2, 4 and memory values 10, 11, 13, respectively, the maximum
@@ -598,6 +654,13 @@ class Vm:
             # Create a new container group with the replicas
             cg = ContainerGroup(cc, n_allocatable_replicas)
             self.cgs.append(cg)
+
+        # Update the containers after a promotion
+        if self.cc_after_promotion is not None:
+            if cc not in self.cc_after_promotion:
+                self.cc_after_promotion[cc] = n_allocatable_replicas
+            else:
+                self.cc_after_promotion[cc] += n_allocatable_replicas
 
         return n_allocatable_replicas
 
