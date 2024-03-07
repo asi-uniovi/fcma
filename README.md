@@ -38,9 +38,6 @@ as well as the allocation of application containers to the VMs.
 
 Installation
 ------------
-**TODO. At this time it is not available as a Python package. When available installations
-will be:**
-
 Clone the repository:
 
 ```bash
