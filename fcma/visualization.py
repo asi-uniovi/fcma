@@ -1,6 +1,7 @@
 """
 This module provides ways of visualizing the solutions for FCMA.
 """
+import inspect
 
 from rich.table import Table, Column
 from rich import print
@@ -44,7 +45,7 @@ class SolutionPrinter:
         print("")
         print("Statistics")
         print("----------")
-        print(self.statistics.solving_pars)
+        print(f"Speed level: {self.statistics.solving_pars.speed_level}")
         if self.statistics.partial_ilp_seconds is not None:
             print(f"Time spent in the partial ILP problem: {self.statistics.partial_ilp_seconds:.3f} seconds")
         if self.statistics.partial_ilp_status is not None:

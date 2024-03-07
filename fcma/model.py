@@ -7,6 +7,7 @@ import copy
 from dataclasses import dataclass
 from enum import Enum
 import pulp
+from pulp import PULP_CBC_CMD
 from math import floor
 from cloudmodel.unified.units import ComputationalUnits, CurrencyPerTime, RequestsPerTime, Storage, Quantity
 
@@ -208,8 +209,7 @@ class AppFamilyPerf:
         object.__setattr__(self, "mem", new_mem)
 
 
-# It can not be frozen because it is possible to change its nameduring its initialization
-@dataclass
+@dataclass(frozen=True)
 class InstanceClass:
     """
     Instance class, i.e., a type of virtual machine in a region.
@@ -232,28 +232,19 @@ class InstanceClass:
         family = self.family
         family.add_ic_to_family(self)
 
-    def __mul__(self, multiplier: int) -> InstanceClass:
+    def mul(self, multiplier: int, name: str) -> InstanceClass:
         """
-        Multiplies one instance class by a scalar giving an instance class in the same family,
+        Multiplies the instance class by a scalar giving an instance class in the same family,
         with price, cores and memory multiplied by that scalar.
+        :param multiplier: Instance class mutiplier.
+        :param name: Name for the new instance class.
+        :return: The new instance class.
         """
-        return InstanceClass(f'{multiplier}x{self.name}', self.price * multiplier,
-                             self.cores * multiplier, self.mem * multiplier, self.family)
+        return InstanceClass(name, self.price * multiplier, self.cores * multiplier,
+                             self.mem * multiplier, self.family)
 
     def __str__(self) -> str:
         return self.name
-
-    def __hash__(self) -> int:
-        return hash(repr(self))
-
-    def set_name(self, name: str) -> InstanceClass:
-        """
-        Set the instance class name.
-        :param name: New name for the instance class.
-        :return: The instance class.
-        """
-        self.name = name
-        return self
 
     def is_multiple(self, ic: InstanceClass) -> bool:
         """
@@ -357,7 +348,7 @@ class InstanceClassFamily:
                     parent.add_ic_to_family(ic)
 
 
-@dataclass
+@dataclass(frozen=True)
 class ContainerClass:
     """
     Represents a container class, i.e., a type of container running an application with some computational resources.
@@ -395,9 +386,6 @@ class ContainerClass:
             return f"{self.app.name}-{self.fm.name}"
         else:
             return f"{self.app.name}-{self.ic.name}"
-
-    def __hash__(self) -> int:
-        return hash(repr(self))
 
     def __mul__(self, replicas: int) -> ContainerClass:
         """
@@ -472,6 +460,30 @@ class Vm:
     # Virtual machines in the same instance class get an increasing index
     _last_ic_index = {}
 
+    def __init__(self, ic: InstanceClass, ignore_ic_index: bool = False) -> Vm:
+        """
+        Create a virtual machine object of the given instance class.
+        :param ic: Instance class.
+        :param ignore_ic_index: When it is True the virtual machine creation do not affect virtual machine indexing.
+        :return: The created virtual machine.
+        """
+        self.ic = ic
+        # vm id is not set when generating a virtual machine for testing
+        if not ignore_ic_index:
+            if ic not in Vm._last_ic_index:
+                Vm._last_ic_index[ic] = 0
+            else:
+                Vm._last_ic_index[ic] += 1
+            self.id = Vm._last_ic_index[ic]  # A number for each virtual machine in the same instance class
+        else:
+            self.id = None
+        self.free_cores = ic.cores  # Free cores
+        self.free_mem = ic.mem  # Free memory
+        self.cgs: list[ContainerGroup] = []  # The list of container groups allocated is empty
+        self.history: list[str] = []  # Virtual machine history filled with vm promotions and additions
+        self.vm_before_promotion: Vm = None  # This VM before its last promotion
+        self.cc_after_promotion: dict[ContainerClass, int] = None  # Containers allocated after the last promotion
+
     @staticmethod
     def reset_ids():
         """
@@ -520,30 +532,6 @@ class Vm:
             return new_vm
         else:
             return None
-
-    def __init__(self, ic: InstanceClass, ignore_ic_index: bool = False) -> Vm:
-        """
-        Create a virtual machine object of the given instance class.
-        :param ic: Instance class.
-        :param ignore_ic_index: When it is True the virtual machine creation do not affect virtual machine indexing.
-        :return: The created virtual machine.
-        """
-        self.ic = ic
-        # vm id is not set when generating a virtual machine for testing
-        if not ignore_ic_index:
-            if ic not in Vm._last_ic_index:
-                Vm._last_ic_index[ic] = 0
-            else:
-                Vm._last_ic_index[ic] += 1
-            self.id = Vm._last_ic_index[ic]  # A number for each virtual machine in the same instance class
-        else:
-            self.id = None
-        self.free_cores = ic.cores  # Free cores
-        self.free_mem = ic.mem  # Free memory
-        self.cgs: list[ContainerGroup] = []  # The list of container groups allocated is empty
-        self.history: list[str] = []  # Virtual machine history filled with vm promotions and additions
-        self.vm_before_promotion: Vm = None  # This VM before its last promotion
-        self.cc_after_promotion: dict[ContainerClass, int] = None  # Containers allocated after the last promotion
 
     def __str__(self) -> str:
         return f"{self.ic.name}[{self.id}]"
@@ -706,9 +694,12 @@ class SolvingPars:
     """
     # Speed levels are 1, 2 and 3. In general, the lowest speed level gives the lowest cost
     speed_level: int = 1
-    #  Maximum number of available seconds to solve the partial ILP problem for
-    #  speed level 1. Ignored for the other speed levels
-    partial_ilp_max_seconds: [float] = None
+    # Configure the solver. When it is set to None it uses CBC as solver with default parameters
+    solver: any = PULP_CBC_CMD(msg=0)
+
+    def __post_init__(self):
+        if self.speed_level == 3:
+            object.__setattr__(self, "solver", None)
 
 
 @dataclass
@@ -733,6 +724,15 @@ class SolvingStats:
 
 
 @dataclass(frozen=True)
+class Solution:
+    """
+    Solution to the allocation problem
+    """
+    allocation: Allocation  # List of virtual machines with their container allocations
+    statistics: SolvingStats  # Solution statistics
+
+
+@dataclass(frozen=True)
 class AllocationCheck:
     """
     Allocation summary in terms of node unused capacities and application surplus performances
@@ -746,3 +746,11 @@ class AllocationCheck:
     min_surplus_perf_percentage: float  # Minimum surplus performace percentage evaluate among all the apps
     max_surplus_perf_percentage: float  # Maximum surplus performace percentage evaluate among all the apps
     global_surplus_perf_percentage: float  # Surplus performance adding the performance of all the apps
+
+
+# One system is defined by application performance parameters for pairs application and family
+System = dict[tuple[App, InstanceClassFamily], AppFamilyPerf]
+
+# List of virtual machines with container allocation
+Allocation = list[Vm]
+

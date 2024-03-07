@@ -85,7 +85,7 @@ If order to use the package in your own code, the scheme provided in the example
 ```python
 import logging
 from cloudmodel.unified.units import (ComputationalUnits, RequestsPerTime, Storage)
-from fcma import (App, AppFamilyPerf, Fcma, SolvingPars)
+from fcma import (App, AppFamilyPerf, System, Fcma, SolvingPars)
 from fcma.visualization import SolutionPrinter
 ```
 The first import shows internal information of the solver and it is optional.
@@ -132,7 +132,7 @@ to the problem must provide a total application performance higher than the give
 configured.**
 
 ```python
-app_family_perfs = {
+system: System = {
     # For family aws_eu_west_1.c5_m5_r5_fm. It includes AWS c5, m5 and r5 instances
     (apps["appA"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
         cores=ComputationalUnits("400 mcores"),
@@ -201,7 +201,7 @@ for a replica of 400 mcores and 0.4 req/s, the second for a replica of 2 x 400=8
 and 0.8 req/s, and the last one for a replica ofr 4 x 400=1600 mcores and 1.6 req/s.
 
 ```python
-app_family_perfs = {
+system: System = {
     # For family aws_eu_west_1.c5_m5_r5_fm. It includes AWS subfamilies c5, m5 and r5
     (apps["appA"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
         cores=ComputationalUnits("400 mcores"),
@@ -213,11 +213,11 @@ app_family_perfs = {
 ```
 **6. Create the FCMA problem.**
 ```python
-fcma_problem = Fcma(app_family_perfs, workloads=workloads)
+fcma_problem = Fcma(system, workloads=workloads)
 ```
 **7. Optionally, create the solver parameters.**
 ```python
-solving_pars = SolvingPars(speed_level=1, partial_ilp_max_seconds=10)
+solving_pars = SolvingPars(speed_level=1)
 ```
 Three different solvers are implemented in FCMA:
 - _speed_level=1_. Default solver. It is the slowest solver, but the one giving the 
@@ -225,10 +225,9 @@ best cost.
 - _speed_level=2_. Intermediate speed solver, giving also and intermediate cost.
 - _speed_level=3_. The fastest solver, but the one giving the worst cost results.
 
-The other parameter of the solver, _partial_ilp_max_seconds_, is an optional parameter
-that configures a timeout while solving the so-called partial ILP problem with _speed_level=1_. 
-It is ignored by the other solvers. By default, there is no timeout, so _speed_level=1_ 
-solver could run for unlimited time. 
+The other parameter of the solver, _solver_, is an optional parameter that configures
+the ILP solver for speed levels 1 and 2. More information about solvers can be found in 
+[PuLP solvers](https://coin-or.github.io/pulp/technical/solvers.html).
 
 All the solvers work in two phases:
 - Pre-allocation phase. This phase is different for each solver. The solver selected
@@ -245,20 +244,17 @@ The problem is solved executing the FCMA's solve method using problem data and t
 selected solving parameters:
 
 ```python
-alloc, statistics = fcma_problem.solve(solving_pars)
+solution = fcma_problem.solve(solving_pars)
 ```
-_solving_pars_ parameter is optional and may be None also. In both cases, FCMA uses
-the default solver.
-Two resuts are generated: 
-- An Allocation of application containers to VMs.
-- Solver statistics.
 
-The figure depicts an example of allocation object. All classes in the figure are defined
+The solution includes the allocation and statistics about the result
+
+The figure depicts an example of solution. All classes in the figure are defined
 in [model.py](fcma/model.py) file.
 
-<img src="alloc.png" width="550"/>
+<img src="solution.png" width="600"/>
 
-The figure shows the internal structure of one of the c6g.4xlarge VM in the solution.
+The allocation field in figure shows the internal structure of one of the c6g.12xlarge VM in the solution.
 - _ic_. Instance class of the VM.
 - _cgs_. A list of container groups allocated to the virtual machine. Each container group
 is a set of identical application container or replicas. In the example it contains one replica, 
@@ -276,8 +272,6 @@ perghaps been promoted to its current state.
 In any case, a non-empty history list means that the problem solution may not be optimal.
 
 Apart from allocations, the solver generates also statistics.
-
-<img src="statistics.png" width="500"/>
 
 - _pre_allocation_cost_. The cost of the solution before the allocation phase, before new VMs can
 be added or promoted.
@@ -302,7 +296,7 @@ the partial ILP problem, so this status does not have to match with _pre_allocat
 **9. Optionally, print the results on a terminal.** 
 It is possible to print all the results: virtual machines, containers and statistics with method _print_()
 ```python
-SolutionPrinter(alloc, statistics).print()
+SolutionPrinter(solution.allocation, solution.statistics).print()
 ```
 or print individually each result with methods _print_vms()_, _print_containers()_, or _print_statistics()_.
 
