@@ -347,6 +347,22 @@ class InstanceClassFamily:
                 if ic not in parent.ics:
                     parent.add_ic_to_family(ic)
 
+    def check_fesibility(self, cores: ComputationalUnits, mem: tuple[Storage]) -> bool:
+        """
+        Check if an instance class exists with enough CPU and memory.
+        :param cores: The number of required cores.
+        :param mem: The required memory.
+        :return: True is an instance class exist with enough CPU and memory
+        """
+        for ic in self.ics:
+            if ic.cores < cores:
+                continue
+            for mem_val in mem:
+                if ic.mem < mem_val:
+                    continue
+            return True
+        return False
+
 
 @dataclass(frozen=True)
 class ContainerClass:

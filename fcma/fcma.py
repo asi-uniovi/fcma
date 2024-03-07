@@ -396,7 +396,8 @@ class Fcma:
 
     def check_inputs(self):
         """
-        Check workloads and performance data.
+        Check system correctness, which includes workloads and performance data.
+        :raise ValueError: When a check fails.
         """
         try:
             if not isinstance(self.workloads, dict):
@@ -434,6 +435,17 @@ class Fcma:
         for app in workload_apps:
             if app not in perf_apps:
                 raise ValueError(f"{app.name} has no performance parameters")
+
+        # Check that there is at least one application
+        if len(workload_apps) == 0:
+            raise ValueError("At least one application is required")
+
+        # Check that there is at least one instance class able to allocate any application
+        for app_fm in self.system:
+            fm = app_fm[1]
+            requested_cores = self.system[app_fm].cores
+            requested_mem = self.system[app_fm].mem
+            fm.check_fesibility(requested_cores, requested_mem)
 
     def _create_vars(self, ccs: dict[str, list[ContainerClass, ...]]) -> None:
         """
