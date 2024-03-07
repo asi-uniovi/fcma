@@ -249,7 +249,7 @@ The solution includes the allocation and statistics about the result
 The figure depicts an example of solution. All classes in the figure are defined
 in [model.py](fcma/model.py) file.
 
-<img src="solution.png" width="600"/>
+<img src="solution.png" width="800"/>
 
 The allocation field in figure shows the internal structure of one of the c6g.12xlarge VM in the solution.
 - _ic_. Instance class of the VM.
