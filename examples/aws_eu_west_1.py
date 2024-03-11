@@ -2,8 +2,8 @@
 AWS instance classes and families for region eu-west-1 (Irland)
 Important. This file is an example and so prices and instances do not have to agree with the real ones.
 """
-from fcma import InstanceClass, InstanceClassFamily
 from cloudmodel.unified.units import (ComputationalUnits, CurrencyPerTime, Storage)
+from fcma import InstanceClass, InstanceClassFamily
 
 # Instance class families. Firstly, the parent family and next its children
 c5_m5_r5_fm = InstanceClassFamily("c5_m5_r5")
@@ -115,4 +115,3 @@ r6g_9xlarge = r6g_xlarge.mul(9, "r6g.9xlarge")
 r6g_12xlarge = r6g_xlarge.mul(12, "r6g.12xlarge")
 r6g_18xlarge = r6g_xlarge.mul(18, "r6g.18xlarge")
 r6g_24xlarge = r6g_xlarge.mul(24, "r6g.24xlarge")
-

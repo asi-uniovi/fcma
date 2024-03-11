@@ -6,14 +6,14 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass
 from enum import Enum
+from math import floor
 import pulp
 from pulp import PULP_CBC_CMD
-from math import floor
 from cloudmodel.unified.units import ComputationalUnits, CurrencyPerTime, RequestsPerTime, Storage, Quantity
 
-delta_val = 0.000001  # Minimum difference so that two quantities are different
-delta_cpu = ComputationalUnits(f"{delta_val} core")  # Maximum CPU cores difference for two "equal" CPU values.
-delta_mem = Storage(f"{delta_val} gibibyte")  # Maximum memory gibybytes for two "equal" memory values
+DELTA_VAL = 0.000001  # Minimum difference so that two quantities are different
+DELTA_CPU = ComputationalUnits(f"{DELTA_VAL} core")  # Maximum CPU cores difference for two "equal" CPU values.
+DELTA_MEM = Storage(f"{DELTA_VAL} gibibyte")  # Maximum memory gibybytes for two "equal" memory values
 
 
 def are_val_equal(val1: Quantity, val2: Quantity) -> bool:
@@ -23,10 +23,7 @@ def are_val_equal(val1: Quantity, val2: Quantity) -> bool:
     :param val2: Second value.
     :return: True if both quantities are approximately equal and False otherwise.
     """
-    if abs((val1 - val2).magnitude) < delta_val:
-        return True
-    else:
-        return False
+    return abs((val1 - val2).magnitude) < DELTA_VAL
 
 
 def delta_to_zero(val: float) -> float:
@@ -35,10 +32,9 @@ def delta_to_zero(val: float) -> float:
     :param val: dimentionless value to round.
     :return: The value or zero, depending on its closeness to zero.
     """
-    if abs(val) < delta_val:
+    if abs(val) < DELTA_VAL:
         return 0.0
-    else:
-        return val
+    return val
 
 
 def delta_cpu_to_zero(val_cpu: ComputationalUnits) -> ComputationalUnits:
@@ -47,10 +43,9 @@ def delta_cpu_to_zero(val_cpu: ComputationalUnits) -> ComputationalUnits:
     :param val_cpu: CPU value to round.
     :return: The value or zero, depending on its closeness to zero.
     """
-    if are_val_equal(val_cpu, delta_cpu):
+    if are_val_equal(val_cpu, DELTA_CPU):
         return ComputationalUnits("0 core")
-    else:
-        return val_cpu
+    return val_cpu
 
 
 def delta_mem_to_zero(val_mem: Storage) -> Storage:
@@ -59,10 +54,9 @@ def delta_mem_to_zero(val_mem: Storage) -> Storage:
     :param val_mem: Memory value to round.
     :return: The value or zero, depending on its closeness to zero.
     """
-    if are_val_equal(val_mem, delta_mem):
+    if are_val_equal(val_mem, DELTA_MEM):
         return ComputationalUnits("0 core")
-    else:
-        return val_mem
+    return val_mem
 
 
 class FcmaStatus(Enum):
@@ -111,7 +105,7 @@ class FcmaStatus(Enum):
         if isinstance(status, list):
             # The global status is the worst status in the list
             global_status = FcmaStatus.get_worst_status(status)
-        return global_status == FcmaStatus.OPTIMAL or global_status == FcmaStatus.FEASIBLE
+        return global_status in (FcmaStatus.OPTIMAL, FcmaStatus.FEASIBLE)
 
 
 @dataclass(frozen=True)
@@ -156,25 +150,27 @@ class AppFamilyPerf:
         Updates aggregation parameters, checks dimensions are valid and store them in the standard units.
         :raise ValueError: When parameters are invalid.
         """
-        # Check and convert cores
-        try:
-            object.__setattr__(self, "cores", self.cores.to("cores"))
-        except Exception as _:
-            raise ValueError("Invalid value of cores")
-        if self.cores.magnitude <= 0.0:
-            raise ValueError("Core values must be possitive")
 
-        # Check and convert performances
-        try:
-            object.__setattr__(self, "perf", self.perf.to("req/hour"))
-        except Exception as _:
-            raise ValueError("Invalid value of performance")
-        if self.perf <= 0.0:
-            raise ValueError("Performance values must be possitive")
+        self._validate_and_set("cores", "cores", "cores")
+        self._validate_and_set("perf", "req/hour", "performance")
+        self._validate_and_set_aggs()
+        self._validate_and_set_mem()
 
-        # Check aggregations
+    def _validate_and_set(self, attr_name, unit, error_name):
+        """ Check and set cores and performances """
+        try:
+            value = Quantity(getattr(self, attr_name)).to(unit)
+            object.__setattr__(self, attr_name, value)
+        except Exception:
+            raise ValueError(f"Invalid value of {error_name}") from None
+
+        if value.magnitude <= 0.0:
+            raise ValueError(f"{error_name} values must be positive")
+
+    def _validate_and_set_aggs(self):
+        """ Check and set aggregations """
         if not isinstance(self.aggs, tuple):
-            raise ValueError(f"Aggregations must be expressed as a tuple")
+            raise ValueError("Aggregations must be expressed as a tuple")
         # Aggregation value 1 is not really an aggregation, but helps programming
         if 1 not in self.aggs:
             new_aggs = (1,) + self.aggs
@@ -183,21 +179,22 @@ class AppFamilyPerf:
         prev_agg = 0
         for agg_value in self.aggs:
             if not isinstance(agg_value, int) or agg_value <= prev_agg:
-                raise ValueError(f"Aggregations must be possitive integers sorted by increasing value")
+                raise ValueError("Aggregations must be possitive integers sorted by increasing value")
             prev_agg = agg_value
 
-        # Check and convert memory
+    def _validate_and_set_mem(self):
+        """ Check and set memory """
         if not isinstance(self.mem, tuple):
             new_mem = tuple(self.mem for _ in range(len(self.aggs)))
         else:
             if len(self.mem) != len(self.aggs):
-                raise ValueError(f"Invalid number of memory items")
+                raise ValueError("Invalid number of memory items")
             new_mem = self.mem
         for mem_value in new_mem:
             try:
                 mem_value = mem_value.to("gibibytes")
             except Exception as _:
-                raise ValueError("Invalid value of memory")
+                raise ValueError("Invalid value of memory") from None
         prev_mem_agg = new_mem[0] / self.aggs[0]
         for index in range(1, len(new_mem)):
             if new_mem[index].magnitude <= 0.0:
@@ -266,7 +263,7 @@ class InstanceClass:
         :param ic: The instance class to compare with.
         :return: True when the given instance class is CPU promoted.
         """
-        if ic.family == self.family and ic.cores > self.cores + delta_cpu and are_val_equal(self.mem, ic.mem):
+        if ic.family == self.family and ic.cores > self.cores + DELTA_CPU and are_val_equal(self.mem, ic.mem):
             return True
         return False
 
@@ -277,7 +274,7 @@ class InstanceClass:
         :param ic: The instance class to compare with.
         :return: True when the given instance class is memory promoted.
         """
-        if ic.family == self.family and are_val_equal(ic.cores, self.cores) and ic.mem > self.mem + delta_mem:
+        if ic.family == self.family and are_val_equal(ic.cores, self.cores) and ic.mem > self.mem + DELTA_MEM:
             return True
         return False
 
@@ -369,6 +366,7 @@ class ContainerClass:
     """
     Represents a container class, i.e., a type of container running an application with some computational resources.
     """
+    # pylint: disable=too-many-instance-attributes
     app: App
     ic: InstanceClass  # Instance class is None when the container is not allocated
     fm: InstanceClassFamily  # Instance class family
@@ -388,10 +386,9 @@ class ContainerClass:
         else:
             if len(self.mem) != len(self.aggs):
                 if len(self.mem) != 1:
-                    raise ValueError(f"Invalid number of memory items in computational parameters")
+                    raise ValueError("Invalid number of memory items in computational parameters")
                 # A single memory value is assumed to be independent of the aggregation size
-                else:
-                    std_mem = tuple(self.mem[0].to("gibibytes") for _ in range(len(self.aggs)))
+                std_mem = tuple(self.mem[0].to("gibibytes") for _ in range(len(self.aggs)))
             else:
                 std_mem = tuple(mem.to("gibibytes") for mem in self.mem)
         object.__setattr__(self, "mem", std_mem)
@@ -400,8 +397,7 @@ class ContainerClass:
     def __str__(self) -> str:
         if self.ic is None:
             return f"{self.app.name}-{self.fm.name}"
-        else:
-            return f"{self.app.name}-{self.ic.name}"
+        return f"{self.app.name}-{self.ic.name}"
 
     def __mul__(self, replicas: int) -> ContainerClass:
         """
@@ -452,9 +448,9 @@ class ContainerClass:
         n_aggs = self.get_aggregations(replicas)
         # Add the memory required by all the aggregations
         mem = Storage("0 gibibytes")
-        for agg in n_aggs:
+        for agg, n_agg in zip(self.aggs, n_aggs.values()):
             agg_index = self.aggs.index(agg)
-            mem += self.mem[agg_index] * n_aggs[agg]
+            mem += self.mem[agg_index] * n_agg
 
         return mem
 
@@ -472,6 +468,7 @@ class Vm:
     """
     Represents a virtual machine.
     """
+    # pylint: disable=too-many-instance-attributes
 
     # Virtual machines in the same instance class get an increasing index
     _last_ic_index = {}
@@ -523,7 +520,7 @@ class Vm:
         for vm in vms:
             # Find the cheapest promotion for the given vm that can allocate the cc.
             # Note that promotion of the largest instance class in the family is not possible, returning None.
-            new_ic = vm._cheapest_ic_promotion(cc)
+            new_ic = vm.cheapest_ic_promotion(cc)
             if new_ic is not None:
                 price = new_ic.price - vm.ic.price  # Price of promotion vm.ic -> new_ic
                 if lowest_price is None or price  < lowest_price:
@@ -546,8 +543,7 @@ class Vm:
             index_promoted_vm = vms.index(promoted_vm)
             vms[index_promoted_vm] = new_vm
             return new_vm
-        else:
-            return None
+        return None
 
     def __str__(self) -> str:
         return f"{self.ic.name}[{self.id}]"
@@ -560,9 +556,9 @@ class Vm:
         :param replicas: Number of replicas of the container class.
         :return: True if allocation is possible and False otherwise.
         """
-        if self.free_cores + delta_cpu < replicas * cc.cores:
+        if self.free_cores + DELTA_CPU < replicas * cc.cores:
             return False
-        if self.free_mem + delta_mem < cc.get_mem_from_aggregations(replicas):
+        if self.free_mem + DELTA_MEM < cc.get_mem_from_aggregations(replicas):
             return False
         return True
 
@@ -575,7 +571,7 @@ class Vm:
         """
 
         # Get the number of replicas considering only CPU requirements
-        n_from_cpu = floor((self.free_cores + delta_cpu) / cc.cores)
+        n_from_cpu = floor((self.free_cores + DELTA_CPU) / cc.cores)
 
         # We assume that memory requirements per core decreases as aggregation increases, so the
         # greater the container aggregation, the lower the memory requested.
@@ -587,8 +583,8 @@ class Vm:
         free_mem = self.free_mem
         n_from_mem = 0
         last_agg_index = len(cc.mem) - 1
-        while free_mem + delta_mem >= cc.mem[last_agg_index]:
-            n_add_replicas = int(floor((free_mem + delta_mem) / cc.mem[last_agg_index]))
+        while free_mem + DELTA_MEM >= cc.mem[last_agg_index]:
+            n_add_replicas = int(floor((free_mem + DELTA_MEM) / cc.mem[last_agg_index]))
             n_from_mem += n_add_replicas * cc.aggs[last_agg_index]
             if n_from_mem > n_from_cpu:
                 return n_from_cpu
@@ -668,7 +664,7 @@ class Vm:
 
         return n_allocatable_replicas
 
-    def _cheapest_ic_promotion(self, cc: ContainerClass) -> InstanceClass:
+    def cheapest_ic_promotion(self, cc: ContainerClass) -> InstanceClass:
         """
         Find the cheapest instance class in the same family with enough number cores and memory to
         allocate the currently allocated containers and one container of the given container class.
@@ -679,8 +675,8 @@ class Vm:
         cheapest_ic = None
         min_price = None
         for ic in fm.ics:
-            if self.free_cores + ic.cores - self.ic.cores + delta_cpu >= cc.cores and \
-                    self.free_mem + ic.mem - self.ic.mem + delta_mem >= cc.mem[0]:
+            if self.free_cores + ic.cores - self.ic.cores + DELTA_CPU >= cc.cores and \
+                    self.free_mem + ic.mem - self.ic.mem + DELTA_MEM >= cc.mem[0]:
                 if cheapest_ic is None or ic.price < min_price:
                     cheapest_ic = ic
                     min_price = ic.price
@@ -723,6 +719,7 @@ class SolvingStats:
     """
     Represents the solving statistics of a solution. Some fields are valid for specific speed levels
     """
+    # pylint: disable=too-many-instance-attributes
     solving_pars: SolvingPars = None  # Parameters of the solving algorithm
 
     partial_ilp_status: FcmaStatus = None  # Status of the partial ILP solution (speed_level=1)
@@ -753,6 +750,7 @@ class AllocationCheck:
     """
     Allocation summary in terms of node unused capacities and application surplus performances
     """
+    # pylint: disable=too-many-instance-attributes
     min_unused_cpu_percentage: float  # Minimum unused CPU percentage evaluate among all the VMs
     max_unused_cpu_percentage: float  # Maximum unused CPU percentage evaluate among all the VMs
     global_unused_cpu_percentage: float  # Unused CPU percentage adding the CPU capacity of all the VMs
@@ -769,4 +767,3 @@ System = dict[tuple[App, InstanceClassFamily], AppFamilyPerf]
 
 # List of virtual machines with container allocation
 Allocation = list[Vm]
-

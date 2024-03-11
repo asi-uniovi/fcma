@@ -1,10 +1,9 @@
 """
 This module provides ways of visualizing the solutions for FCMA.
 """
-import inspect
 
 from rich.table import Table, Column
-from rich import print
+from rich import print as print_rich
 from cloudmodel.unified.units import CurrencyPerTime, RequestsPerTime
 from .model import Vm, SolvingStats, FcmaStatus
 
@@ -18,7 +17,7 @@ class SolutionPrinter:
         self.vms = vms
         self.statistics = statistics
 
-    def print_containers(self):
+    def print_containers(self) -> Table:
         """
         Print solution container tables.
         """
@@ -28,15 +27,17 @@ class SolutionPrinter:
         keys = list(tables.keys())
         keys.sort()
         for key in keys:
-            print(tables[key])
+            print_rich(tables[key])
+        return None
 
-    def print_vms(self):
+    def print_vms(self) -> Table:
         """
         Print solution container virtual machines.
         """
         if self._is_infeasible_sol():
             return Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
-        print(self._get_vm_table())
+        print_rich(self._get_vm_table())
+        return None
 
     def _print_statistics(self) -> None:
         """
@@ -90,11 +91,11 @@ class SolutionPrinter:
                     ic_prices[ic_name] = vm.ic.price
         total_cost = CurrencyPerTime("0 usd/hour")
         total_vms = 0
-        for ic_name in total_num_vms:
-            ic_cost = total_num_vms[ic_name] * ic_prices[ic_name].to_reduced_units()
+        for ic_name, total_num in total_num_vms.items():
+            ic_cost = total_num * ic_prices[ic_name].to_reduced_units()
             total_cost += ic_cost
-            total_vms += total_num_vms[ic_name]
-            table.add_row(f"{ic_name} (x{total_num_vms[ic_name]})", f"{ic_cost:.3f}")
+            total_vms += total_num
+            table.add_row(f"{ic_name} (x{total_num})", f"{ic_cost:.3f}")
         table.add_section()
         table.add_row(f"Total: {total_vms}", f"{total_cost:.3f}")
         return table
@@ -124,18 +125,18 @@ class SolutionPrinter:
 
         # Get an allocation table for each application
         tables = {}
-        for app_name in app_table_entries:
+        for app_name, app_table_entry in app_table_entries.items():
             table = Table("VM", "Container", "App", Column(header="Perf", justify="right"),
                           title=f"Container allocation for {app_name}")
             total_app_replicas = 0
             total_app_perf = RequestsPerTime("0 req/s")
-            for app_row in app_table_entries[app_name]["rows"]:
+            for app_row in app_table_entry["rows"]:
                 total_app_replicas += app_row[3]
                 total_app_perf += app_row[2] * app_row[3]
                 table.add_row(app_row[0], f"{app_row[1]} (x{app_row[3]})", app_name,
                               f"{app_row[2].to('req/s')} (x{app_row[3]})")
             table.add_section()
-            table.add_row(f"total:", f"{total_app_replicas}", "", f"{total_app_perf:.3f}")
+            table.add_row("total:", f"{total_app_replicas}", "", f"{total_app_perf:.3f}")
             tables[app_name] = table
 
         return tables

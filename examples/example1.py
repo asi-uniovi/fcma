@@ -3,9 +3,9 @@ A simple example of how to use the Fcma class
 """
 import logging
 from cloudmodel.unified.units import (ComputationalUnits, RequestsPerTime, Storage)
+import aws_eu_west_1
 from fcma import (App, AppFamilyPerf, System, Fcma, SolvingPars)
 from fcma.visualization import SolutionPrinter
-import aws_eu_west_1
 
 # Set logging level
 logging.basicConfig(level=logging.INFO)
@@ -28,7 +28,7 @@ workloads = {
     apps["appD"]: RequestsPerTime("15  req/s"),
 }
 
-# Computational parameters for pairs application and instance class family. Performance is assumed to be
+# Computational parameters for pairs application and instance class family. Performance is assumed
 # the same for all the instance classes in a family, whenever instance classes have enough CPU and memory.
 # agg tuple provides valid replicas aggregations, i.e, aggregations that do not reduce
 # performance. For example, agg = (2, 4, 10) allows the aggregation of 2, 4 or 10
@@ -102,7 +102,7 @@ SolutionPrinter(solution.allocation, solution.statistics).print()
 # Check the solution
 slack = fcma_problem.check_allocation()
 print("\n----------- Solution check --------------")
-for attr_name in slack.__annotations__:
-    print(f"{attr_name}: {slack.__getattribute__(attr_name): .2f} %")
+for attribute in dir(slack):
+    if attribute.endswith("percentage"):
+        print(f"{attribute}: {getattr(slack, attribute): .2f} %")
 print("-----------------------------------------")
-
