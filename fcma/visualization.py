@@ -17,52 +17,64 @@ class SolutionPrinter:
         self.vms = vms
         self.statistics = statistics
 
-    def print_containers(self) -> Table:
+    def print_containers(self):
         """
         Print solution container tables.
         """
+
         if self._is_infeasible_sol():
-            return Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
+            print_rich(
+                Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
+            )
         tables = self._get_app_tables()
         keys = list(tables.keys())
         keys.sort()
         for key in keys:
             print_rich(tables[key])
-        return None
 
-    def print_vms(self) -> Table:
+    def print_vms(self):
         """
         Print solution container virtual machines.
         """
+
         if self._is_infeasible_sol():
-            return Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
+            print_rich(
+                Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
+            )
         print_rich(self._get_vm_table())
-        return None
 
     def _print_statistics(self) -> None:
         """
         Print solution statistics.
         """
+
         print("")
         print("Statistics")
         print("----------")
         print(f"Speed level: {self.statistics.solving_pars.speed_level}")
         if self.statistics.partial_ilp_seconds is not None:
-            print(f"Time spent in the partial ILP problem: {self.statistics.partial_ilp_seconds:.3f} seconds")
+            print(
+                f"Time spent in the partial ILP problem: {self.statistics.partial_ilp_seconds:.3f} seconds"
+            )
         if self.statistics.partial_ilp_status is not None:
             print(f"Solution status after the ILP problem: {self.statistics.partial_ilp_status}")
         print(f"Status previous to the allocation phase: {self.statistics.pre_allocation_status}")
         print(f"Cost before the allocation phase: {self.statistics.pre_allocation_cost:.3f}")
-        print(f"Time spent before the allocation phase: {self.statistics.pre_allocation_seconds:.3f} seconds")
-        print(f"Time spent in the allocation phase: {self.statistics.allocation_seconds:.3f} seconds")
+        print(
+            f"Time spent before the allocation phase: {self.statistics.pre_allocation_seconds:.3f} seconds"
+        )
+        print(
+            f"Time spent in the allocation phase: {self.statistics.allocation_seconds:.3f} seconds"
+        )
         print(f"Final status: {self.statistics.final_status}")
         print(f"Final cost: {self.statistics.final_cost:.3f}")
         print(f"Total spent time: {self.statistics.total_seconds: .3f} seconds")
 
     def print(self):
         """
-        Prints tables and a summary of the solution.
+        Print tables and a summary of the solution.
         """
+
         if self._is_infeasible_sol():
             print(f"Non feasible solution. [bold red]{self.statistics.final_status}")
             return
@@ -76,6 +88,7 @@ class SolutionPrinter:
         Return a Rich table with information about the virtual machines.
         :return: The virtual machines table.
         """
+
         table = Table("VM", Column(header="Cost", justify="right"), title="Virtual Machines")
 
         total_num_vms = {}
@@ -105,8 +118,13 @@ class SolutionPrinter:
         For each application returns a Rich table with information about the allocation of its container classes.
         :return: One dictionary with table with container applications for each name.
         """
+
+        tables: dict[str, Table] = {}
         if self._is_infeasible_sol():
-            return Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
+            print_rich(
+                Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
+            )
+            return tables
 
         # Get application table rows
         app_table_entries = {}
@@ -118,23 +136,34 @@ class SolutionPrinter:
                     app_name = cg.cc.app.name
                     row = (str(vm), container_name, cg.cc.perf, cg.replicas)
                     if app_name not in app_table_entries:
-                        app_table_entries[app_name] = {"rows": [row], "total_perf": cg.cc.perf * cg.replicas}
+                        app_table_entries[app_name] = {
+                            "rows": [row],
+                            "total_perf": cg.cc.perf * cg.replicas,
+                        }
                     else:
                         app_table_entries[app_name]["rows"].append(row)
                         app_table_entries[app_name]["total_perf"] += cg.cc.perf * cg.replicas
 
         # Get an allocation table for each application
-        tables = {}
         for app_name, app_table_entry in app_table_entries.items():
-            table = Table("VM", "Container", "App", Column(header="Perf", justify="right"),
-                          title=f"Container allocation for {app_name}")
+            table = Table(
+                "VM",
+                "Container",
+                "App",
+                Column(header="Perf", justify="right"),
+                title=f"Container allocation for {app_name}",
+            )
             total_app_replicas = 0
             total_app_perf = RequestsPerTime("0 req/s")
             for app_row in app_table_entry["rows"]:
                 total_app_replicas += app_row[3]
                 total_app_perf += app_row[2] * app_row[3]
-                table.add_row(app_row[0], f"{app_row[1]} (x{app_row[3]})", app_name,
-                              f"{app_row[2].to('req/s')} (x{app_row[3]})")
+                table.add_row(
+                    app_row[0],
+                    f"{app_row[1]} (x{app_row[3]})",
+                    app_name,
+                    f"{app_row[2].to('req/s')} (x{app_row[3]})",
+                )
             table.add_section()
             table.add_row("total:", f"{total_app_replicas}", "", f"{total_app_perf:.3f}")
             tables[app_name] = table
@@ -143,6 +172,10 @@ class SolutionPrinter:
 
     def _is_infeasible_sol(self) -> bool:
         """
-        Returns True if the solution is infeasible.
+        Return True if the solution is infeasible.
         """
-        return self.statistics.final_status not in [FcmaStatus.OPTIMAL, FcmaStatus.FEASIBLE]
+
+        return self.statistics.final_status not in [
+            FcmaStatus.OPTIMAL,
+            FcmaStatus.FEASIBLE,
+        ]

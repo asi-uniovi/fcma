@@ -1,12 +1,27 @@
 """
-A buch of auxiliary methods for the FCMA analysis
+A bunch of auxiliary methods for the FCMA analysis
 """
 
 import os
 import itertools
 import copy
-from pulp import PulpSolverError, log, subprocess, constants, warnings, operating_system, devnull
-from fcma.model import App, RequestsPerTime, AppFamilyPerf, InstanceClass, InstanceClassFamily, FamilyClassAggPars
+from pulp import (
+    PulpSolverError,
+    log,
+    subprocess,
+    constants,
+    warnings,
+    operating_system,
+    devnull,
+)
+from fcma.model import (
+    App,
+    RequestsPerTime,
+    AppFamilyPerf,
+    InstanceClass,
+    InstanceClassFamily,
+    FamilyClassAggPars,
+)
 
 
 def check_inputs(system, workloads):
@@ -23,9 +38,13 @@ def check_inputs(system, workloads):
         for app in workload_apps:
             if not isinstance(app, App):
                 raise ValueError from None
-            workloads[app].to("req/hour")  # It generates an exception when it is not a RequestPerTime
+            workloads[app].to(
+                "req/hour"
+            )  # It generates an exception when it is not a RequestPerTime
     except Exception as _:
-        raise ValueError(f"Workloads must be a dict[{App.__name__}, {RequestsPerTime.__name__}]") from None
+        raise ValueError(
+            f"Workloads must be a dict[{App.__name__}, {RequestsPerTime.__name__}]"
+        ) from None
 
     try:
         if not isinstance(system, dict):
@@ -43,8 +62,10 @@ def check_inputs(system, workloads):
             if not isinstance(system[perf_app_fm], AppFamilyPerf):
                 raise ValueError from None
     except Exception as _:
-        raise ValueError(f"App family performances must be a dict[({App.__name__},"
-                         f"{InstanceClassFamily.__name__}), {AppFamilyPerf.__name__}]") from None
+        raise ValueError(
+            f"App family performances must be a dict[({App.__name__},"
+            f"{InstanceClassFamily.__name__}), {AppFamilyPerf.__name__}]"
+        ) from None
 
     for app in perf_apps:
         if app not in workloads:
@@ -65,8 +86,9 @@ def check_inputs(system, workloads):
         fm.check_fesibility(requested_cores, requested_mem)
 
 
-def remove_ics_same_param_higher_price(ics: list[InstanceClass, ...], values: list[float, ...],
-                                       reverse: bool = False) -> None:
+def remove_ics_same_param_higher_price(
+    ics: list[InstanceClass], values: list[float], reverse: bool = False
+) -> None:
     """
     Shorten a list of instance classes in the same family, removing those with the same parameter value,
     but a higher price. After the removal operation, instance classes in the list are sorted
@@ -75,6 +97,7 @@ def remove_ics_same_param_higher_price(ics: list[InstanceClass, ...], values: li
     :param values: List with a value for each instance class.
     :param reverse: Instance classes are sorted by decreasing values when it is false.
     """
+
     # Firstly, check instance classes
     if len(ics) == 0:
         return
@@ -104,15 +127,16 @@ def remove_ics_same_param_higher_price(ics: list[InstanceClass, ...], values: li
         # Remove all the instance classes with the same parameter value and insert that with the lowest price.
         # Values are related to instance classes so the same operation must be replicated on values.
         val = values[min_ic_index]
-        del values[first_ic_index:last_ic_index + 1]
+        del values[first_ic_index : last_ic_index + 1]
         values.insert(first_ic_index, val)
-        del ics[first_ic_index:last_ic_index + 1]
+        del ics[first_ic_index : last_ic_index + 1]
         ics.insert(first_ic_index, min_ic)
         first_ic_index += 1  # Prepare for the next group of instance classes
 
 
-def get_fm_aggregation_pars(fm: InstanceClassFamily, fm_agg_pars: dict[InstanceClassFamily, FamilyClassAggPars]) \
-        -> FamilyClassAggPars:
+def get_fm_aggregation_pars(
+    fm: InstanceClassFamily, fm_agg_pars: dict[InstanceClassFamily, FamilyClassAggPars]
+) -> FamilyClassAggPars:
     """
     Get aggregation parameters for a given instance class family.
     :param fm: Instance class family.
@@ -121,8 +145,11 @@ def get_fm_aggregation_pars(fm: InstanceClassFamily, fm_agg_pars: dict[InstanceC
     """
     # pylint: disable-msg=too-many-locals
 
-    def _get_max_to_try_for(large_ic: InstanceClass, small_ic: InstanceClass,
-                            inter_ic: tuple[InstanceClass, ...]) -> int:
+    def _get_max_to_try_for(
+        large_ic: InstanceClass,
+        small_ic: InstanceClass,
+        inter_ic: tuple[InstanceClass, ...],
+    ) -> int:
         """
         Get the maximum number of instances of instance class small_ic that can be used to aggregate into an
         instance class of type large_ic. That number is by default the integer division of the number
@@ -137,6 +164,7 @@ def get_fm_aggregation_pars(fm: InstanceClassFamily, fm_agg_pars: dict[InstanceC
         :param inter_ic: Instance classes with cores between the samll and large instance classes.
         :return: The maximum number of small nodes in any aggregation giving one large node.
         """
+
         for ic in inter_ic:
             cores_relation = (ic.cores // small_ic.cores).magnitude
             if cores_relation * small_ic.cores == ic.cores:
@@ -151,9 +179,10 @@ def get_fm_aggregation_pars(fm: InstanceClassFamily, fm_agg_pars: dict[InstanceC
         "param large_ic: Large instance class after the aggregation.
         "param small_ics: Small instance classes sorted by increasing number of cores.
         """
+
         max_to_try = []
         for i_index, ic in enumerate(small_ics):
-            max_to_try.append(_get_max_to_try_for(large_ic, ic, small_ics[i_index + 1:]))
+            max_to_try.append(_get_max_to_try_for(large_ic, ic, small_ics[i_index + 1 :]))
         for val in itertools.product(*[range(n + 1) for n in max_to_try]):
             if sum(q_i * ic.cores for q_i, ic in zip(val, small_ics)) == large_ic.cores:
                 yield val
@@ -178,8 +207,10 @@ def get_fm_aggregation_pars(fm: InstanceClassFamily, fm_agg_pars: dict[InstanceC
     # Initialize the solution, which is composed of a dictionary n_aggs with the number of aggregations
     # for each instance type and a dictionary p_agg with the number of instances of each type that are
     # used in each aggregation.
-    n_agg = [0]  # n_agg[i] = number of aggregations for ics[i]
-    p_agg = {}  # p_agg[(i, k, j)] = number of instances of ics[j] in the k-th aggregation to get ics[i]
+    n_agg_list = [0]  # n_agg[i] = number of aggregations for ics[i]
+    p_agg = (
+        {}
+    )  # p_agg[(i, k, j)] = number of instances of ics[j] in the k-th aggregation to get ics[i]
 
     for i in range(1, len(ics)):
         target_ic = ics[i]
@@ -189,14 +220,16 @@ def get_fm_aggregation_pars(fm: InstanceClassFamily, fm_agg_pars: dict[InstanceC
             for j, q_j in enumerate(q):
                 if q_j > 0:
                     p_agg[(i, k, j)] = q_j
-        n_agg.append(k + 1)
+        n_agg_list.append(k + 1)
 
-    return FamilyClassAggPars(ic_names, tuple(cores), tuple(n_agg), p_agg)
+    return FamilyClassAggPars(ic_names, tuple(cores), tuple(n_agg_list), p_agg)
 
 
 def solve_cbc_patched(self, lp, use_mps=True):
-    """Solve a MIP problem using CBC patched from original PuLP function
-    to save a log with cbc's output and take from it the best bound."""
+    """
+    Solve a MIP problem using CBC patched from original PuLP function
+    to save a log with cbc's output and take from it the best bound.
+    """
 
     # pylint: disable-all
 
@@ -214,12 +247,8 @@ def solve_cbc_patched(self, lp, use_mps=True):
         return ret
 
     if not self.executable(self.path):
-        raise PulpSolverError(
-            "Pulp: cannot execute %s cwd: %s" % (self.path, os.getcwd())
-        )
-    tmpLp, tmpMps, tmpSol, tmpMst = self.create_tmp_files(
-        lp.name, "lp", "mps", "sol", "mst"
-    )
+        raise PulpSolverError("Pulp: cannot execute %s cwd: %s" % (self.path, os.getcwd()))
+    tmpLp, tmpMps, tmpSol, tmpMst = self.create_tmp_files(lp.name, "lp", "mps", "sol", "mst")
     if use_mps:
         vs, variablesNames, constraintsNames, _ = lp.writeMPS(tmpMps, rename=1)
         cmds = " " + tmpMps + " "
@@ -286,8 +315,7 @@ def solve_cbc_patched(self, lp, use_mps=True):
             if pipe:
                 pipe.close()
             raise PulpSolverError(
-                "Pulp: Error while trying to execute, use msg=True for more details"
-                + self.path
+                "Pulp: Error while trying to execute, use msg=True for more details" + self.path
             )
         if pipe:
             pipe.close()

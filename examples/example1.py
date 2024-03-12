@@ -1,10 +1,11 @@
 """
 A simple example of how to use the Fcma class
 """
+
 import logging
-from cloudmodel.unified.units import (ComputationalUnits, RequestsPerTime, Storage)
+from cloudmodel.unified.units import ComputationalUnits, RequestsPerTime, Storage
 import aws_eu_west_1
-from fcma import (App, AppFamilyPerf, System, Fcma, SolvingPars)
+from fcma import App, AppFamilyPerf, System, Fcma, SolvingPars
 from fcma.visualization import SolutionPrinter
 
 # Set logging level
@@ -20,6 +21,7 @@ apps = {
     "appC": App(name="appC"),
     "appD": App(name="appD"),
 }
+
 
 workloads = {
     apps["appA"]: RequestsPerTime("6  req/s"),
@@ -42,38 +44,37 @@ system: System = {
         cores=ComputationalUnits("400 mcores"),
         mem=Storage("500 mebibytes"),
         perf=RequestsPerTime("0.4 req/s"),
-        aggs=(2,)
+        aggs=(2,),
     ),
     (apps["appB"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
         cores=ComputationalUnits("80 mcores"),
         mem=Storage("200 mebibytes"),
         perf=RequestsPerTime("0.5 req/s"),
-        aggs=(2, 4, 8, 12)
+        aggs=(2, 4, 8, 12),
     ),
     (apps["appC"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
         cores=ComputationalUnits("90 mcores"),
         mem=Storage("350 mebibytes"),
         perf=RequestsPerTime("0.2 req/s"),
-        aggs=(2, 4, 10)
+        aggs=(2, 4, 10),
     ),
     (apps["appD"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
         cores=ComputationalUnits("8500 mcores"),
         mem=Storage("25000 mebibytes"),
         perf=RequestsPerTime("1 req/s"),
     ),
-
     # For family aws_eu_west_1.c6g_m6g_r6g_fm. It includes AWS c6g, m6g and r6g instances
     (apps["appB"], aws_eu_west_1.c6g_m6g_r6g_fm): AppFamilyPerf(
         cores=ComputationalUnits("100 mcores"),
         mem=Storage("250 mebibytes"),
         perf=RequestsPerTime("0.35 req/s"),
-        aggs=(2, 4, 10)
+        aggs=(2, 4, 10),
     ),
     (apps["appC"], aws_eu_west_1.c6g_m6g_r6g_fm): AppFamilyPerf(
         cores=ComputationalUnits("120 mcores"),
         mem=Storage("450 mebibytes"),
         perf=RequestsPerTime("0.4 req/s"),
-        aggs=(2, 4, 8)
+        aggs=(2, 4, 8),
     ),
     (apps["appD"], aws_eu_west_1.c6g_m6g_r6g_fm): AppFamilyPerf(
         cores=ComputationalUnits("6500 mcores"),
