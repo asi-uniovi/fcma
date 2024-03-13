@@ -38,6 +38,10 @@ as well as the allocation of application containers to the VMs.
 
 Installation
 ------------
+There are two ways to install the package: manually or using poetry.
+
+### Manual install
+
 Clone the repository:
 
 ```bash
@@ -64,6 +68,37 @@ package, install it in editable mode:
 ```bash
 pip install -e .
 ```
+
+### Installation using poetry
+
+Poetry is a tool for ensuring that the package is installed with the correct dependencies and versions. The initial setup is more complex than the manual installation, but it is preferable for developing and publishing the package.
+
+First be sure to have poetry installed in your system. First you require `pipx`, which is a tool that installs python tools into their own isolated environments, and adds them to your path. Follow [this instructions](https://pipx.pypa.io/stable/installation/) to install `pipx`. Then install poetry with pipx:
+
+```bash
+pipx install poetry
+```
+
+Clone `fcma` repository:
+
+```bash
+git clone https://github.com/asi-uniovi/fcma.git
+cd fcma
+```
+
+Start a poetry shell (it is a virtual environment specific for this project):
+
+```bash
+poetry shell
+```
+
+Install the package (it will be installed in editable mode, for development)
+
+```bash
+poetry install
+```
+
+Remember to use `poetry shell` from `fcma` folder every time you want to work with the package in a different terminal or session.
 
 Usage
 -----
