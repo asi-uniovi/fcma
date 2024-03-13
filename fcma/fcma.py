@@ -54,6 +54,8 @@ class Fcma:
 
     # pylint: disable=too-many-instance-attributes
 
+    VERSION: str = "0.1.00 - March 13th, 16:00"
+
     # A dictionary with instance class aggregation parameters for each family.
     # They are calculated only once for each instance class family and cached in this variable
     fm_agg_pars: dict[InstanceClassFamily, FamilyClassAggPars] = {}
@@ -518,7 +520,7 @@ class Fcma:
 
         for fm in self._best_fm_cores_apps:
             n_nodes[fm] = {}
-            ics = fm._ics.copy()
+            ics = fm.ics.copy()
             # Remove instance classes with the same number of cores but a higher price
             cores = [ic.cores.magnitude for ic in ics]
             remove_ics_same_param_higher_price(ics, cores)
