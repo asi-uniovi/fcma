@@ -8,6 +8,65 @@ from cloudmodel.unified.units import CurrencyPerTime, RequestsPerTime
 from .model import Vm, SolvingStats, FcmaStatus
 
 
+class ProblemPrinter:
+    """
+    Utility methods to create pretty presentations of problems.
+    """
+
+    def __init__(self, fcma):
+        self.fcma = fcma
+
+    def print(self):
+        """
+        Print the problem.
+        """
+        print_rich(self._get_workloads_table())
+        print_rich(self._get_system_table())
+
+    def _get_workloads_table(self) -> Table:
+        """
+        Return a Rich table with information about the workloads.
+        :return: The workload table.
+        """
+        table = Table("App", "Workload", title="Workloads")
+        for app, workload in self.fcma._workloads.items():
+            table.add_row(app.name, f"{workload:.3f}")
+        return table
+
+    def _get_system_table(self) -> Table:
+        """
+        Return a Rich table with information about the system.
+        :return: The system table.
+        """
+        table = Table(
+            "App",
+            "Family",
+            "Cores",
+            "Mem",
+            "Perf",
+            "Aggs",
+            title="System",
+        )
+        for (app, fm), perf in self.fcma._system.items():
+            # There's a memory value per container class. If all are the same, we print only one.
+            mem_set = set(i for i in perf.mem)
+            if len(mem_set) == 1:
+                mem = mem_set.pop().to("gibibytes").magnitude
+                mem_str = f"{mem:.3f}"
+            else:
+                mem_str = ", ".join(f"{mem.to('gibibytes').magnitude:.3f}" for mem in perf.mem)
+
+            table.add_row(
+                app.name,
+                fm.name,
+                f"{perf.cores.to('cores').magnitude:.3f}",
+                mem_str,
+                f"{perf.perf:.3f}",
+                f"{perf.aggs}",
+            )
+        return table
+
+
 class SolutionPrinter:
     """
     Utility methods to create pretty presentations of solutions.

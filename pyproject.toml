@@ -1,2 +1,19 @@
+[tool.poetry]
+name = "fcma"
+version = "0.1.0"
+description = "Fast Container to Machine Allocator"
+authors = ["Jose Maria Lopez <chechu@uniovi.es>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+cloudmodel = { git = "https://jentrialgo@github.com/jldiaz-uniovi/cloudmodel.git" }
+pulp = "^2.8.0"
+rich = "^13.7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.black]
 line-length=100
