@@ -108,7 +108,7 @@ def example1_solving_pars() -> SolvingPars:
     #             solver = PULP_CBC_CMD(timeLimit=10, gapRel=0.01, threads=8)
     #             solving_pars = SolvingPars(speed_level=1, solver=solver)
     # More information can be found on: https://coin-or.github.io/pulp/technical/solvers.html
-    solving_pars = SolvingPars(speed_level=1)
+    solving_pars = SolvingPars(speed_level=2)
     return solving_pars
 
 
@@ -121,7 +121,7 @@ def example1_solution(example1_data, example1_solving_pars) -> tuple[Fcma, Solvi
 
 @pytest.fixture(scope="module")
 def example1_expected_allocation() -> dict:
-    path = Path(__file__).parent / "example1_expected_allocation.json"
+    path = Path(__file__).parent / "example1_expected_allocation_v2.json"
     with open(path, "r") as file:
         data = json.load(file)
     return data
@@ -129,7 +129,7 @@ def example1_expected_allocation() -> dict:
 
 @pytest.fixture(scope="module")
 def example1_expected_vms() -> dict:
-    path = Path(__file__).parent / "example1_expected_vms.json"
+    path = Path(__file__).parent / "example1_expected_vms_v2.json"
     with open(path, "r") as file:
         data = json.load(file)
     return data
@@ -145,15 +145,15 @@ def test_example1_data_creation(example1_data):
     assert example1_data is not None
 
 
-@pytest.mark.velocity1
+@pytest.mark.velocity2
 def test_example1_solving_config(example1_solving_pars):
     # Check the solving configuration
     assert example1_solving_pars is not None
-    assert example1_solving_pars.speed_level == 1
+    assert example1_solving_pars.speed_level == 2
 
 
-@pytest.mark.velocity1
-def test_example1_solution_is_feasible(example1_solution, capsys):
+@pytest.mark.velocity2
+def test_example1_solution_is_feasible(example1_solution):
     *_, solution = example1_solution
     # Print results
     sp = SolutionPrinter(solution.allocation, solution.statistics)
@@ -162,7 +162,7 @@ def test_example1_solution_is_feasible(example1_solution, capsys):
     assert sp._is_infeasible_sol() == False
 
 
-@pytest.mark.velocity1
+@pytest.mark.velocity2
 def test_example1_solution_is_valid(example1_solution):
     fcma_problem, _, solution = example1_solution
     # Print results
@@ -172,7 +172,7 @@ def test_example1_solution_is_valid(example1_solution):
     slack = fcma_problem.check_allocation()
 
 
-@pytest.mark.velocity1
+@pytest.mark.velocity2
 @pytest.mark.skip(reason="Checking the printed output is no the best way")
 def test_example1_printed_solution_vms_and_prices(example1_solution, capsys):
     *_, solution = example1_solution
@@ -200,7 +200,7 @@ def test_example1_printed_solution_vms_and_prices(example1_solution, capsys):
             assert "7.008 usd / hour" in line
 
 
-@pytest.mark.velocity1
+@pytest.mark.velocity2
 def test_example1_solution_vms_and_prices(example1_solution, example1_expected_vms):
     *_, solution = example1_solution
     sp = SolutionPrinter(solution.allocation, solution.statistics)
@@ -215,7 +215,7 @@ def test_example1_solution_vms_and_prices(example1_solution, example1_expected_v
     #       other callable methods the computation of the printed values?
 
 
-@pytest.mark.velocity1
+@pytest.mark.velocity2
 def test_example1_solution_apps_allocations(example1_solution, example1_expected_allocation):
     fcma_problem, _, solution = example1_solution
     sp = SolutionPrinter(solution.allocation, solution.statistics)
@@ -234,10 +234,3 @@ def test_example1_solution_apps_allocations(example1_solution, example1_expected
     # Check the allocations for each app
     for app, table in apps_allocations.items():
         check_app_alloc(app, table)
-
-
-# print("\n----------- Solution check --------------")
-# for attribute in dir(slack):
-#     if attribute.endswith("percentage"):
-#         print(f"{attribute}: {getattr(slack, attribute): .2f} %")
-# print("-----------------------------------------")
