@@ -54,8 +54,6 @@ class Fcma:
 
     # pylint: disable=too-many-instance-attributes
 
-    VERSION: str = "0.1.00 - March 13th, 16:00"
-
     # A dictionary with instance class aggregation parameters for each family.
     # They are calculated only once for each instance class family and cached in this variable
     fm_agg_pars: dict[InstanceClassFamily, FamilyClassAggPars] = {}
@@ -68,6 +66,7 @@ class Fcma:
         :raises ValueError: When some input check fails.
         """
 
+        self.VERSION: str = "0.1.01 - March 14th, 16:20"
         self._system = system
         self._workloads = workloads
 
@@ -940,7 +939,8 @@ class Fcma:
                 if last_promotion_cost > addition_cost:
                     # Undo the last promotion in each virtual machine
                     for i in range(len(self._vms[fm])):
-                        self._vms[fm][i] = self._vms[fm][i].vm_before_promotion
+                        if self._vms[fm][i].vm_before_promotion is not None:
+                            self._vms[fm][i] = self._vms[fm][i].vm_before_promotion
                     # Append the virtual machines coming from the addition alternative
                     self._vms[fm].extend(added_vms)
 
