@@ -22,7 +22,6 @@ apps = {
     "appD": App(name="appD"),
 }
 
-
 workloads = {
     apps["appA"]: RequestsPerTime("6  req/s"),
     apps["appB"]: RequestsPerTime("12 req/s"),
