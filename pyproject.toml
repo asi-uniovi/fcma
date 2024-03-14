@@ -11,6 +11,13 @@ cloudmodel = { git = "https://jentrialgo@github.com/jldiaz-uniovi/cloudmodel.git
 pulp = "^2.8.0"
 rich = "^13.7.0"
 
+[tool.poetry.group.dev.dependencies]
+black = "^24.2.0"
+pytest = "^8.1.1"
+coverage = "^7.4.3"
+pylint = "^3.1.0"
+pytest-cov = "^4.1.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
