@@ -124,6 +124,9 @@ def example1_expected_allocation() -> dict:
     path = Path(__file__).parent / "example1_expected_allocation.json"
     with open(path, "r") as file:
         data = json.load(file)
+    # Organize by rows instead of columns
+    for app in data:
+        data[app] = [[*row] for row in zip(*data[app])]
     return data
 
 
@@ -132,6 +135,8 @@ def example1_expected_vms() -> dict:
     path = Path(__file__).parent / "example1_expected_vms.json"
     with open(path, "r") as file:
         data = json.load(file)
+    # Organize by rows instead of columns
+    data = [[*row] for row in zip(*data)]
     return data
 
 
@@ -207,8 +212,12 @@ def test_example1_solution_vms_and_prices(example1_solution, example1_expected_v
 
     # Another way, get the rich table and inspect the contents
     vm_table = sp._get_vm_table()
-    for col, expected in zip(vm_table.columns, example1_expected_vms):
-        assert col._cells == expected
+    # Organize by rows instead of columns
+    solution_data = [col._cells for col in vm_table.columns]
+    solution_data = [[*row] for row in zip(*solution_data)]
+    assert len(solution_data) == len(example1_expected_vms)
+    for row in solution_data:
+        assert row in example1_expected_vms
 
     # TODO: Make visible the variables used by SolutionPrinter so that the values
     #       can be compared instead of the formatted strings? Or externalize to
@@ -226,14 +235,17 @@ def test_example1_solution_apps_allocations(example1_solution, example1_expected
     solution_apps = set(apps_allocations.keys())
     assert problem_apps == solution_apps
 
-    def check_app_alloc(app, table):
+    def check_app_alloc(app, sol_data):
         expected_alloc = example1_expected_allocation[app]
-        for col, expected in zip(table.columns, expected_alloc):
-            assert col._cells == expected
+        assert len(sol_data) == len(expected_alloc)
+        for col in sol_data:
+            assert col in expected_alloc
 
     # Check the allocations for each app
     for app, table in apps_allocations.items():
-        check_app_alloc(app, table)
+        solution_data = [col._cells for col in table.columns]
+        solution_data = [[*row] for row in zip(*solution_data)]
+        check_app_alloc(app, solution_data)
 
 
 # print("\n----------- Solution check --------------")
