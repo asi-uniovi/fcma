@@ -5,7 +5,7 @@ This module provides ways of visualizing the solutions for FCMA.
 from rich.table import Table, Column
 from rich import print as print_rich
 from cloudmodel.unified.units import CurrencyPerTime, RequestsPerTime
-from .model import Vm, SolvingStats, FcmaStatus
+from .model import Solution, SolutionSummary, Vm, SolvingStats, FcmaStatus
 
 
 class ProblemPrinter:
@@ -75,6 +75,7 @@ class SolutionPrinter:
     def __init__(self, vms: list[Vm], statistics: SolvingStats):
         self.vms = vms
         self.statistics = statistics
+        self.summary = SolutionSummary(Solution(vms, statistics))
 
     def print_containers(self):
         """
@@ -149,27 +150,12 @@ class SolutionPrinter:
         """
 
         table = Table("VM", Column(header="Cost", justify="right"), title="Virtual Machines")
+        vm_summary = self.summary.get_vm_summary()
 
-        total_num_vms = {}
-        ic_prices = {}
-        for fm in self.vms:
-            for vm in self.vms[fm]:
-                ic_name = vm.ic.name
-                if ic_name not in total_num_vms:
-                    total_num_vms[ic_name] = 1
-                else:
-                    total_num_vms[ic_name] += 1
-                if ic_name not in ic_prices:
-                    ic_prices[ic_name] = vm.ic.price
-        total_cost = CurrencyPerTime("0 usd/hour")
-        total_vms = 0
-        for ic_name, total_num in total_num_vms.items():
-            ic_cost = total_num * ic_prices[ic_name].to_reduced_units()
-            total_cost += ic_cost
-            total_vms += total_num
-            table.add_row(f"{ic_name} (x{total_num})", f"{ic_cost:.3f}")
+        for vm in vm_summary.vms:
+            table.add_row(f"{vm.ic_name} (x{vm.total_num})", f"{vm.cost:.3f}")
         table.add_section()
-        table.add_row(f"Total: {total_vms}", f"{total_cost:.3f}")
+        table.add_row(f"Total: {vm_summary.total_num}", f"{vm_summary.cost:.3f}")
         return table
 
     def _get_app_tables(self) -> dict[str, Table]:
@@ -233,8 +219,4 @@ class SolutionPrinter:
         """
         Return True if the solution is infeasible.
         """
-
-        return self.statistics.final_status not in [
-            FcmaStatus.OPTIMAL,
-            FcmaStatus.FEASIBLE,
-        ]
+        return self.summary.is_infeasible()

@@ -8,9 +8,11 @@ import pytest
 from cloudmodel.unified.units import ComputationalUnits, RequestsPerTime, Storage
 from fcma import App, AppFamilyPerf, System, Fcma, SolvingPars, Solution
 from fcma.visualization import SolutionPrinter
-from fcma.model import Vm
+from fcma.model import AllVmSummary, Vm, SolutionSummary
 import importlib.util
 import os
+
+from cloudmodel.unified.units import CurrencyPerTime
 
 
 # ==============================================================================
@@ -202,7 +204,8 @@ def test_example1_solution_is_valid(example1_solution):
 
 
 # Next test is parametrized, which means that it is run several times with
-# different values for the speed_level
+# different values for the speed_level, and for each speed level it uses
+# a different file for expected results
 @pytest.mark.parametrize(
     "example1_solving_pars, example1_expected_vms",
     [(1, "example1_expected_vms.json"), (2, "example1_expected_vms_v2.json")],
@@ -252,6 +255,15 @@ def test_example1_solution_apps_allocations(example1_solution, example1_expected
         solution_data = [col._cells for col in table.columns]
         solution_data = [[*row] for row in zip(*solution_data)]
         check_app_alloc(app, solution_data)
+
+
+@pytest.mark.parametrize("example1_solving_pars", [1, 2], indirect=["example1_solving_pars"])
+def test_AllocationSummary_vms(example1_solution):
+    *_, solution = example1_solution
+    summary = SolutionSummary(solution)
+    vm_alloc = summary.get_vm_summary()
+    assert vm_alloc.total_num == 6
+    assert vm_alloc.cost.magnitude == pytest.approx(10.696, abs=1e-4)
 
 
 # # print("\n----------- Solution check --------------")

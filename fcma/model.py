@@ -3,6 +3,7 @@ Data classes for containers and nodes of the Fast Container and Machine Allocato
 """
 
 from __future__ import annotations
+from collections import defaultdict
 import copy
 from dataclasses import dataclass
 from enum import Enum
@@ -856,6 +857,58 @@ class AllocationCheck:
 
     # Surplus performance adding the performance of all the apps
     global_surplus_perf_percentage: float
+
+
+@dataclass(frozen=True)
+class SingleVmSummary:
+    ic_name: str
+    total_num: int
+    cost: CurrencyPerTime
+
+
+@dataclass(frozen=True)
+class AllVmSummary:
+    vms: tuple[SingleVmSummary, ...]
+    total_num: int
+    cost: CurrencyPerTime
+
+
+class SolutionSummary:
+    """
+    Allocation summary that can be used to generate printed output
+    """
+
+    def __init__(self, solution: Solution) -> None:
+        self.solution = solution
+
+    def get_vm_summary(self) -> AllVmSummary:
+        num_vms = defaultdict(int)
+        ic_prices = defaultdict(lambda: CurrencyPerTime("0 usd/hour"))
+        total_num = 0
+        total_price = CurrencyPerTime("0 usd/hour")
+        for family, vm_list in self.solution.allocation.items():
+            for vm in vm_list:
+                ic_name = vm.ic.name
+                num_vms[ic_name] += 1
+                ic_prices[ic_name] += vm.ic.price
+                total_num += 1
+                total_price += vm.ic.price
+        return AllVmSummary(
+            vms=tuple(
+                SingleVmSummary(
+                    ic_name=ic_name, total_num=num_vms[ic_name], cost=ic_prices[ic_name]
+                )
+                for ic_name in num_vms
+            ),
+            total_num=total_num,
+            cost=total_price,
+        )
+
+    def is_infeasible(self):
+        return self.solution.statistics.final_status not in [
+            FcmaStatus.OPTIMAL,
+            FcmaStatus.FEASIBLE,
+        ]
 
 
 # One system is defined by application performance parameters for pairs application and family
