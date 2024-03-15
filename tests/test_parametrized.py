@@ -8,6 +8,7 @@ import pytest
 from cloudmodel.unified.units import ComputationalUnits, RequestsPerTime, Storage
 from fcma import App, AppFamilyPerf, System, Fcma, SolvingPars, Solution
 from fcma.visualization import SolutionPrinter
+from fcma.model import Vm
 import importlib.util
 import os
 
@@ -32,7 +33,7 @@ def aws_eu_west_1():
 
 
 @pytest.fixture(scope="module")
-def example1_data(aws_eu_west_1) -> Fcma:
+def example1_data(aws_eu_west_1, request) -> Fcma:
     """Defines a set of parameters for the example1 problem"""
     apps = {
         "appA": App(name="appA", sfmpl=0.5),
@@ -93,14 +94,13 @@ def example1_data(aws_eu_west_1) -> Fcma:
         ),
     }
 
-    # Create an object for the FCMA problem
-    fcma_problem = Fcma(system, workloads=workloads)
-    return fcma_problem
+    return system, workloads
 
 
 @pytest.fixture(scope="module")
-def example1_solving_pars() -> SolvingPars:
-    """Defines parameters for solving the example 1"""
+def example1_solving_pars(request) -> SolvingPars:
+    """Defines parameters for solving the example 1, with different speed levels.
+    Returns the speed level received as parameter and the SolvingPars object"""
 
     # Three speed levels are possible: 1, 2 and 3, being speed level 1 the slowest, but the one giving the best
     # cost results. A solver with options can be passed for speed levels 1 and 2, or defaults are used. For instance:
@@ -108,35 +108,52 @@ def example1_solving_pars() -> SolvingPars:
     #             solver = PULP_CBC_CMD(timeLimit=10, gapRel=0.01, threads=8)
     #             solving_pars = SolvingPars(speed_level=1, solver=solver)
     # More information can be found on: https://coin-or.github.io/pulp/technical/solvers.html
-    solving_pars = SolvingPars(speed_level=2)
-    return solving_pars
+    speed = request.param
+    solving_pars = SolvingPars(speed_level=speed)
+    return speed, solving_pars
 
 
 @pytest.fixture(scope="module")
 def example1_solution(example1_data, example1_solving_pars) -> tuple[Fcma, SolvingPars, Solution]:
+    """Instantiates a Fcma problem and solves it. Returns the problem, the solving parameters
+    and the solution"""
     # Solve the allocation problem
-    solution = example1_data.solve(example1_solving_pars)
-    return example1_data, example1_solving_pars, solution
+    Vm._last_ic_index = {}
+    problem = Fcma(*example1_data)
+    solution = problem.solve(example1_solving_pars[1])
+    return problem, example1_solving_pars, solution
 
 
 @pytest.fixture(scope="module")
-def example1_expected_allocation() -> dict:
-    path = Path(__file__).parent / "example1_expected_allocation_v2.json"
+def example1_expected_vms(request) -> list:
+    """Reads a json file (received as parameter) which contains the expected VMs and their prices.
+    Returns a list of "rows", each one containing the name of a instance class with the number
+    of instances in parenthesis, and the price of the instances of that class.
+    """
+    filename = request.param
+    path = Path(__file__).parent / filename
+    with open(path, "r") as file:
+        data = json.load(file)
+    # Organize by rows instead of columns
+    data = [[*row] for row in zip(*data)]
+    return data
+
+
+@pytest.fixture(scope="module")
+def example1_expected_allocation(request) -> dict:
+    """Reads a json file (received as parameter) which contains the allocation of containers
+    for each app. Returns a dictionary in which the keys are the app names and the values
+    are lists of "rows", each one containing the VM in which the container is deployed,
+    the container name with the number of replicas in parenthesis, the app name,
+    and the requests served by all the replicas.
+    """
+    filename = request.param
+    path = Path(__file__).parent / filename
     with open(path, "r") as file:
         data = json.load(file)
     # Organize by rows instead of columns
     for app in data:
         data[app] = [[*row] for row in zip(*data[app])]
-    return data
-
-
-@pytest.fixture(scope="module")
-def example1_expected_vms() -> dict:
-    path = Path(__file__).parent / "example1_expected_vms_v2.json"
-    with open(path, "r") as file:
-        data = json.load(file)
-    # Organize by rows instead of columns
-    data = [[*row] for row in zip(*data)]        
     return data
 
 
@@ -150,14 +167,19 @@ def test_example1_data_creation(example1_data):
     assert example1_data is not None
 
 
-@pytest.mark.velocity2
+# Next test is parametrized, which means that it is run several times with
+# different values for the speed_level
+@pytest.mark.parametrize("example1_solving_pars", [1, 2, 3], indirect=["example1_solving_pars"])
 def test_example1_solving_config(example1_solving_pars):
     # Check the solving configuration
-    assert example1_solving_pars is not None
-    assert example1_solving_pars.speed_level == 2
+    speed, config = example1_solving_pars
+    assert config is not None
+    assert config.speed_level == speed
 
 
-@pytest.mark.velocity2
+# Next test is parametrized, which means that it is run several times with
+# different values for the speed_level
+@pytest.mark.parametrize("example1_solving_pars", [1, 2, 3], indirect=["example1_solving_pars"])
 def test_example1_solution_is_feasible(example1_solution):
     *_, solution = example1_solution
     # Print results
@@ -167,7 +189,9 @@ def test_example1_solution_is_feasible(example1_solution):
     assert sp._is_infeasible_sol() == False
 
 
-@pytest.mark.velocity2
+# Next test is parametrized, which means that it is run several times with
+# different values for the speed_level
+@pytest.mark.parametrize("example1_solving_pars", [1, 2, 3], indirect=["example1_solving_pars"])
 def test_example1_solution_is_valid(example1_solution):
     fcma_problem, _, solution = example1_solution
     # Print results
@@ -177,41 +201,20 @@ def test_example1_solution_is_valid(example1_solution):
     slack = fcma_problem.check_allocation()
 
 
-@pytest.mark.velocity2
-@pytest.mark.skip(reason="Checking the printed output is no the best way")
-def test_example1_printed_solution_vms_and_prices(example1_solution, capsys):
-    *_, solution = example1_solution
-    sp = SolutionPrinter(solution.allocation, solution.statistics)
-
-    # Check the vms and prices
-
-    # One way to check that: Capture the output printed by print_vms()
-    # and make string comparisons with the expected output
-    capsys.readouterr()  # Discard anything printed before
-    sp.print_vms()
-    output = capsys.readouterr()  # Get what was printed
-    for line in output.out.split("\n"):
-        if "c5.4xlarge" in line:
-            assert "(x1)" in line
-            assert "0.768 usd / hour" in line
-        if "c6g.4xlarge" in line:
-            assert "(x2)" in line
-            assert "1.168 usd / hour" in line
-        if "c6g.12xlarge" in line:
-            assert "(x1)" in line
-            assert "1.752 usd / hour" in line
-        if "c6g.24xlarge" in line:
-            assert "(x2)" in line
-            assert "7.008 usd / hour" in line
-
-
-@pytest.mark.velocity2
+# Next test is parametrized, which means that it is run several times with
+# different values for the speed_level
+@pytest.mark.parametrize(
+    "example1_solving_pars, example1_expected_vms",
+    [(1, "example1_expected_vms.json"), (2, "example1_expected_vms_v2.json")],
+    indirect=["example1_solving_pars", "example1_expected_vms"],
+)
 def test_example1_solution_vms_and_prices(example1_solution, example1_expected_vms):
     *_, solution = example1_solution
     sp = SolutionPrinter(solution.allocation, solution.statistics)
 
     # Another way, get the rich table and inspect the contents
     vm_table = sp._get_vm_table()
+    # Organize by rows instead of columns
     solution_data = [col._cells for col in vm_table.columns]
     solution_data = [[*row] for row in zip(*solution_data)]
     assert len(solution_data) == len(example1_expected_vms)
@@ -223,7 +226,11 @@ def test_example1_solution_vms_and_prices(example1_solution, example1_expected_v
     #       other callable methods the computation of the printed values?
 
 
-@pytest.mark.velocity2
+@pytest.mark.parametrize(
+    "example1_solving_pars, example1_expected_allocation",
+    [(1, "example1_expected_allocation.json"), (2, "example1_expected_allocation_v2.json")],
+    indirect=["example1_solving_pars", "example1_expected_allocation"],
+)
 def test_example1_solution_apps_allocations(example1_solution, example1_expected_allocation):
     fcma_problem, _, solution = example1_solution
     sp = SolutionPrinter(solution.allocation, solution.statistics)
@@ -245,3 +252,10 @@ def test_example1_solution_apps_allocations(example1_solution, example1_expected
         solution_data = [col._cells for col in table.columns]
         solution_data = [[*row] for row in zip(*solution_data)]
         check_app_alloc(app, solution_data)
+
+
+# # print("\n----------- Solution check --------------")
+# # for attribute in dir(slack):
+# #     if attribute.endswith("percentage"):
+# #         print(f"{attribute}: {getattr(slack, attribute): .2f} %")
+# # print("-----------------------------------------")
