@@ -16,9 +16,9 @@
             ""
         ],
         [
-            "0.8 req / second (x7)",
-            "0.4 req / second (x1)",
-            "6.000 req / second"
+            "0.800 req/s (x7)",
+            "0.400 req/s (x1)",
+            "6.000 req/s"
         ]
     ],
     "appB": [
@@ -35,8 +35,8 @@
             ""
         ],
         [
-            "6.0 req / second (x2)",
-            "12.000 req / second"
+            "6.000 req/s (x2)",
+            "12.000 req/s"
         ]
     ],
     "appD": [
@@ -65,12 +65,12 @@
             ""
         ],
         [
-            "0.8 req / second (x1)",
-            "0.8 req / second (x1)",
-            "0.8 req / second (x3)",
-            "0.8 req / second (x7)",
-            "0.8 req / second (x7)",
-            "15.200 req / second"
+            "0.800 req/s (x1)",
+            "0.800 req/s (x1)",
+            "0.800 req/s (x3)",
+            "0.800 req/s (x7)",
+            "0.800 req/s (x7)",
+            "15.200 req/s"
         ]
     ],
     "appC": [
@@ -102,13 +102,13 @@
             ""
         ],
         [
-            "3.2 req / second (x4)",
-            "1.6 req / second (x1)",
-            "0.4 req / second (x1)",
-            "3.2 req / second (x1)",
-            "1.6 req / second (x1)",
-            "0.4 req / second (x1)",
-            "20.000 req / second"
+            "3.200 req/s (x4)",
+            "1.600 req/s (x1)",
+            "0.400 req/s (x1)",
+            "3.200 req/s (x1)",
+            "1.600 req/s (x1)",
+            "0.400 req/s (x1)",
+            "20.000 req/s"
         ]
     ]
 }

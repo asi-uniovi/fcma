@@ -327,8 +327,9 @@ the partial ILP problem, so this status does not have to match with _pre_allocat
 
 **9. Optionally, print the results on a terminal.** 
 It is possible to print all the results: virtual machines, containers and statistics with method _print_()
+
 ```python
-SolutionPrinter(solution.allocation, solution.statistics).print()
+SolutionPrinter(solution).print()
 ```
 or print individually each result with methods _print_vms()_, _print_containers()_, or _print_statistics()_.
 

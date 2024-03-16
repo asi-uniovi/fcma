@@ -184,11 +184,9 @@ def test_example1_solving_config(example1_solving_pars):
 @pytest.mark.parametrize("example1_solving_pars", [1, 2, 3], indirect=["example1_solving_pars"])
 def test_example1_solution_is_feasible(example1_solution):
     *_, solution = example1_solution
-    # Print results
-    sp = SolutionPrinter(solution.allocation, solution.statistics)
 
     # Check the solution is feasible
-    assert sp._is_infeasible_sol() == False
+    assert solution.is_infeasible() == False
 
 
 # Next test is parametrized, which means that it is run several times with
@@ -197,7 +195,7 @@ def test_example1_solution_is_feasible(example1_solution):
 def test_example1_solution_is_valid(example1_solution):
     fcma_problem, _, solution = example1_solution
     # Print results
-    sp = SolutionPrinter(solution.allocation, solution.statistics)
+    sp = SolutionPrinter(solution)
 
     # Check the solution has no contradictions
     slack = fcma_problem.check_allocation()
@@ -213,7 +211,7 @@ def test_example1_solution_is_valid(example1_solution):
 )
 def test_example1_solution_vms_and_prices(example1_solution, example1_expected_vms):
     *_, solution = example1_solution
-    sp = SolutionPrinter(solution.allocation, solution.statistics)
+    sp = SolutionPrinter(solution)
 
     # Another way, get the rich table and inspect the contents
     vm_table = sp._get_vm_table()
@@ -236,7 +234,7 @@ def test_example1_solution_vms_and_prices(example1_solution, example1_expected_v
 )
 def test_example1_solution_apps_allocations(example1_solution, example1_expected_allocation):
     fcma_problem, _, solution = example1_solution
-    sp = SolutionPrinter(solution.allocation, solution.statistics)
+    sp = SolutionPrinter(solution)
     apps_allocations = sp._get_app_tables()
 
     # The apps in the solution must match the apps in the problem

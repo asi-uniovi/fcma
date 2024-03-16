@@ -97,7 +97,7 @@ solving_pars = SolvingPars(speed_level=1)
 solution = fcma_problem.solve(solving_pars)
 
 # Print results
-SolutionPrinter(solution.allocation, solution.statistics).print()
+SolutionPrinter(solution).print()
 
 # Check the solution
 slack = fcma_problem.check_allocation()

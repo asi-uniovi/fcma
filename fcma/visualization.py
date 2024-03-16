@@ -72,19 +72,20 @@ class SolutionPrinter:
     Utility methods to create pretty presentations of solutions.
     """
 
-    def __init__(self, vms: list[Vm], statistics: SolvingStats):
-        self.vms = vms
-        self.statistics = statistics
-        self.summary = SolutionSummary(Solution(vms, statistics))
+    def __init__(self, solution: Solution):
+        self._solution = solution
+        self._vms = solution.allocation
+        self._statistics = solution.statistics
+        self.summary = SolutionSummary(solution)
 
     def print_containers(self):
         """
         Print solution container tables.
         """
 
-        if self._is_infeasible_sol():
+        if self._solution.is_infeasible():
             print_rich(
-                Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
+                Table(title=f"Non feasible solution. [bold red]{self._statistics.final_status}")
             )
         tables = self._get_app_tables()
         keys = list(tables.keys())
@@ -97,9 +98,9 @@ class SolutionPrinter:
         Print solution container virtual machines.
         """
 
-        if self._is_infeasible_sol():
+        if self._solution.is_infeasible():
             print_rich(
-                Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
+                Table(title=f"Non feasible solution. [bold red]{self._statistics.final_status}")
             )
         print_rich(self._get_vm_table())
 
@@ -111,32 +112,32 @@ class SolutionPrinter:
         print("")
         print("Statistics")
         print("----------")
-        print(f"Speed level: {self.statistics.solving_pars.speed_level}")
-        if self.statistics.partial_ilp_seconds is not None:
+        print(f"Speed level: {self._statistics.solving_pars.speed_level}")
+        if self._statistics.partial_ilp_seconds is not None:
             print(
-                f"Time spent in the partial ILP problem: {self.statistics.partial_ilp_seconds:.3f} seconds"
+                f"Time spent in the partial ILP problem: {self._statistics.partial_ilp_seconds:.3f} seconds"
             )
-        if self.statistics.partial_ilp_status is not None:
-            print(f"Solution status after the ILP problem: {self.statistics.partial_ilp_status}")
-        print(f"Status previous to the allocation phase: {self.statistics.pre_allocation_status}")
-        print(f"Cost before the allocation phase: {self.statistics.pre_allocation_cost:.3f}")
+        if self._statistics.partial_ilp_status is not None:
+            print(f"Solution status after the ILP problem: {self._statistics.partial_ilp_status}")
+        print(f"Status previous to the allocation phase: {self._statistics.pre_allocation_status}")
+        print(f"Cost before the allocation phase: {self._statistics.pre_allocation_cost:.3f}")
         print(
-            f"Time spent before the allocation phase: {self.statistics.pre_allocation_seconds:.3f} seconds"
+            f"Time spent before the allocation phase: {self._statistics.pre_allocation_seconds:.3f} seconds"
         )
         print(
-            f"Time spent in the allocation phase: {self.statistics.allocation_seconds:.3f} seconds"
+            f"Time spent in the allocation phase: {self._statistics.allocation_seconds:.3f} seconds"
         )
-        print(f"Final status: {self.statistics.final_status}")
-        print(f"Final cost: {self.statistics.final_cost:.3f}")
-        print(f"Total spent time: {self.statistics.total_seconds: .3f} seconds")
+        print(f"Final status: {self._statistics.final_status}")
+        print(f"Final cost: {self._statistics.final_cost:.3f}")
+        print(f"Total spent time: {self._statistics.total_seconds: .3f} seconds")
 
     def print(self):
         """
         Print tables and a summary of the solution.
         """
 
-        if self._is_infeasible_sol():
-            print(f"Non feasible solution. [bold red]{self.statistics.final_status}")
+        if self._solution.is_infeasible():
+            print(f"Non feasible solution. [bold red]{self._statistics.final_status}")
             return
 
         self.print_vms()
@@ -165,16 +166,16 @@ class SolutionPrinter:
         """
 
         tables: dict[str, Table] = {}
-        if self._is_infeasible_sol():
+        if self._solution.is_infeasible():
             print_rich(
-                Table(title=f"Non feasible solution. [bold red]{self.statistics.final_status}")
+                Table(title=f"Non feasible solution. [bold red]{self._statistics.final_status}")
             )
             return tables
 
         # Get application table rows
         app_table_entries = {}
-        for fm in self.vms:
-            for vm in self.vms[fm]:
+        for fm in self._vms:
+            for vm in self._vms[fm]:
                 for cg in vm.cgs:
                     cores = int(cg.cc.cores.to("mcore").magnitude)
                     container_name = f"{str(cg.cc)}-{cores} mcores"
@@ -195,7 +196,7 @@ class SolutionPrinter:
                 "VM",
                 "Container",
                 "App",
-                Column(header="Perf", justify="right"),
+                "Perf",
                 title=f"Container allocation for {app_name}",
             )
             total_app_replicas = 0
@@ -207,16 +208,10 @@ class SolutionPrinter:
                     app_row[0],
                     f"{app_row[1]} (x{app_row[3]})",
                     app_name,
-                    f"{app_row[2].to('req/s')} (x{app_row[3]})",
+                    f"{app_row[2].to('req/s').magnitude:.3f} req/s (x{app_row[3]})",
                 )
             table.add_section()
-            table.add_row("total:", f"{total_app_replicas}", "", f"{total_app_perf:.3f}")
+            table.add_row("total:", f"{total_app_replicas}", "", f"{total_app_perf.magnitude:.3f} req/s")
             tables[app_name] = table
 
         return tables
-
-    def _is_infeasible_sol(self) -> bool:
-        """
-        Return True if the solution is infeasible.
-        """
-        return self.summary.is_infeasible()

@@ -387,6 +387,17 @@ class InstanceClassFamily:
             return True
         return False
 
+    def get_parent_fm_in(self, fms: tuple[InstanceClassFamily]) -> InstanceClassFamily:
+        """
+        Get a parent family in the list of families.
+        :param fms: Possible parent families.
+        :return: The parent family in the list, or itself if there are no parent families
+        """
+        for fm in fms:
+            if fm in self.parent_fms:
+                return fm
+        return self
+
 
 @dataclass(frozen=True)
 class ContainerClass:
@@ -822,6 +833,16 @@ class Solution:
     allocation: dict[InstanceClassFamily, Allocation]
     statistics: SolvingStats  # Solution statistics
 
+    def is_infeasible(self) -> bool:
+        """
+        Return True if the solution is infeasible.
+        """
+
+        return self.statistics.final_status not in [
+            FcmaStatus.OPTIMAL,
+            FcmaStatus.FEASIBLE,
+        ]
+
 
 @dataclass(frozen=True)
 class AllocationCheck:
@@ -905,10 +926,7 @@ class SolutionSummary:
         )
 
     def is_infeasible(self):
-        return self.solution.statistics.final_status not in [
-            FcmaStatus.OPTIMAL,
-            FcmaStatus.FEASIBLE,
-        ]
+        return self.solution.is_infeasible()
 
 
 # One system is defined by application performance parameters for pairs application and family
