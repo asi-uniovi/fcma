@@ -173,25 +173,8 @@ class SolutionPrinter:
             return tables
 
         # Get application table rows
-        app_table_entries = {}
-        for fm in self._vms:
-            for vm in self._vms[fm]:
-                for cg in vm.cgs:
-                    cores = int(cg.cc.cores.to("mcore").magnitude)
-                    container_name = f"{str(cg.cc)}-{cores} mcores"
-                    app_name = cg.cc.app.name
-                    row = (str(vm), container_name, cg.cc.perf, cg.replicas)
-                    if app_name not in app_table_entries:
-                        app_table_entries[app_name] = {
-                            "rows": [row],
-                            "total_perf": cg.cc.perf * cg.replicas,
-                        }
-                    else:
-                        app_table_entries[app_name]["rows"].append(row)
-                        app_table_entries[app_name]["total_perf"] += cg.cc.perf * cg.replicas
-
-        # Get an allocation table for each application
-        for app_name, app_table_entry in app_table_entries.items():
+        apps_info = self.summary.get_all_apps_allocations()
+        for app_name, app_info in apps_info.items():
             table = Table(
                 "VM",
                 "Container",
@@ -199,19 +182,22 @@ class SolutionPrinter:
                 "Perf",
                 title=f"Container allocation for {app_name}",
             )
-            total_app_replicas = 0
-            total_app_perf = RequestsPerTime("0 req/s")
-            for app_row in app_table_entry["rows"]:
-                total_app_replicas += app_row[3]
-                total_app_perf += app_row[2] * app_row[3]
-                table.add_row(
-                    app_row[0],
-                    f"{app_row[1]} (x{app_row[3]})",
+            for container in app_info.container_groups:
+                cores = int(container.cores.m_as("mcore"))
+                container_name = f"{str(container.container_name)}-{cores} mcores"
+                row = (
+                    container.vm_name,
+                    f"{container_name} (x{container.replicas})",
                     app_name,
-                    f"{app_row[2].to('req/s').magnitude:.3f} req/s (x{app_row[3]})",
+                    f"{container.performance.m_as('req/s'):.3f} req/s (x{container.replicas})",
                 )
+                table.add_row(*row)
             table.add_section()
-            table.add_row("total:", f"{total_app_replicas}", "", f"{total_app_perf.magnitude:.3f} req/s")
+            table.add_row(
+                "total:",
+                f"{app_info.total_replicas}",
+                "",
+                f"{app_info.total_perf.m_as('req/s'):.3f} req/s",
+            )
             tables[app_name] = table
-
         return tables

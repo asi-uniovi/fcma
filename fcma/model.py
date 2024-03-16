@@ -898,9 +898,11 @@ class AllVmSummary:
 @dataclass(frozen=True)
 class ContainerGroupSummary:
     container_name: str
+    vm_name: str
     app_name: str
     performance: RequestsPerTime
     replicas: int
+    cores: ComputationalUnits
 
 
 @dataclass(frozen=True)
@@ -961,9 +963,11 @@ class SolutionSummary:
                 app_info[app_name].append(
                     ContainerGroupSummary(
                         container_name=str(container_group.cc),
+                        vm_name=str(vm),
                         app_name=container_group.cc.app.name,
                         performance=container_group.cc.perf,
                         replicas=container_group.replicas,
+                        cores=container_group.cc.cores
                     )
                 )
         # Second pass, compute totals per app

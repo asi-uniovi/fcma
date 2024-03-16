@@ -168,7 +168,7 @@ def expected_allocation(request) -> dict:
             "appC": (6, 9, 20),
             "appD": (5, 19, 15.2),
         }
-    elif request.param == 2:
+    elif request.param in [2, 3]:
         expected_allocation = {  # num_cgroups, total_replicas, total_perf
             "appA": (2, 8, 6),
             "appB": (1, 2, 12),
@@ -287,7 +287,7 @@ def test_AllocationSummary_vms(example1_solution):
 
 @pytest.mark.parametrize(
     "example1_solving_pars, expected_allocation",
-    [(1,1), (2,2)],
+    [(1, 1), (2, 2), (3, 3)],
     indirect=["example1_solving_pars", "expected_allocation"],
 )
 def test_AllocationSummary_apps(example1_solution, expected_allocation):
@@ -296,6 +296,21 @@ def test_AllocationSummary_apps(example1_solution, expected_allocation):
     app_alloc = summary.get_all_apps_allocations()
     assert len(app_alloc) == 4
     for app, info in app_alloc.items():
+        assert len(info.container_groups) == expected_allocation[app][0]
+        assert info.total_replicas == expected_allocation[app][1]
+        assert info.total_perf.m_as("req/s") == pytest.approx(expected_allocation[app][2])
+
+
+@pytest.mark.parametrize(
+    "example1_solving_pars, expected_allocation",
+    [(1, 1), (2, 2), (3, 3)],
+    indirect=["example1_solving_pars", "expected_allocation"],
+)
+def test_AllocationSummary_single_app(example1_solution, expected_allocation):
+    *_, solution = example1_solution
+    summary = SolutionSummary(solution)
+    for app in expected_allocation:
+        info = summary.get_app_allocation_summary(app)
         assert len(info.container_groups) == expected_allocation[app][0]
         assert info.total_replicas == expected_allocation[app][1]
         assert info.total_perf.m_as("req/s") == pytest.approx(expected_allocation[app][2])
