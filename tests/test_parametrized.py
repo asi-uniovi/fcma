@@ -159,6 +159,27 @@ def example1_expected_allocation(request) -> dict:
     return data
 
 
+@pytest.fixture(scope="module")
+def expected_allocation(request) -> dict:
+    if request.param == 1:
+        expected_allocation = {  # num_cgroups, total_replicas, total_perf
+            "appA": (2, 8, 6),
+            "appB": (2, 3, 12.5),
+            "appC": (6, 9, 20),
+            "appD": (5, 19, 15.2),
+        }
+    elif request.param == 2:
+        expected_allocation = {  # num_cgroups, total_replicas, total_perf
+            "appA": (2, 8, 6),
+            "appB": (1, 2, 12),
+            "appC": (6, 9, 20),
+            "appD": (5, 19, 15.2),
+        }
+    else:
+        raise NotImplementedError
+    return expected_allocation
+
+
 # ==============================================================================
 # Tests
 # ==============================================================================
@@ -262,6 +283,22 @@ def test_AllocationSummary_vms(example1_solution):
     vm_alloc = summary.get_vm_summary()
     assert vm_alloc.total_num == 6
     assert vm_alloc.cost.magnitude == pytest.approx(10.696, abs=1e-4)
+
+
+@pytest.mark.parametrize(
+    "example1_solving_pars, expected_allocation",
+    [(1,1), (2,2)],
+    indirect=["example1_solving_pars", "expected_allocation"],
+)
+def test_AllocationSummary_apps(example1_solution, expected_allocation):
+    *_, solution = example1_solution
+    summary = SolutionSummary(solution)
+    app_alloc = summary.get_all_apps_allocations()
+    assert len(app_alloc) == 4
+    for app, info in app_alloc.items():
+        assert len(info.container_groups) == expected_allocation[app][0]
+        assert info.total_replicas == expected_allocation[app][1]
+        assert info.total_perf.m_as("req/s") == pytest.approx(expected_allocation[app][2])
 
 
 # # print("\n----------- Solution check --------------")

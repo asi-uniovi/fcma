@@ -7,6 +7,7 @@ from collections import defaultdict
 import copy
 from dataclasses import dataclass
 from enum import Enum
+from itertools import chain
 from math import floor
 import pulp
 from pulp import PULP_CBC_CMD
@@ -894,6 +895,22 @@ class AllVmSummary:
     cost: CurrencyPerTime
 
 
+@dataclass(frozen=True)
+class ContainerGroupSummary:
+    container_name: str
+    app_name: str
+    performance: RequestsPerTime
+    replicas: int
+
+
+@dataclass(frozen=True)
+class AppSummary:
+    app_name: str
+    container_groups: tuple[ContainerGroupSummary, ...]
+    total_replicas: int
+    total_perf: RequestsPerTime
+
+
 class SolutionSummary:
     """
     Allocation summary that can be used to generate printed output
@@ -901,6 +918,7 @@ class SolutionSummary:
 
     def __init__(self, solution: Solution) -> None:
         self.solution = solution
+        self.app_allocations = {}
 
     def get_vm_summary(self) -> AllVmSummary:
         num_vms = defaultdict(int)
@@ -924,6 +942,42 @@ class SolutionSummary:
             total_num=total_num,
             cost=total_price,
         )
+
+    def get_app_allocation_summary(self, app_name) -> AppSummary:
+        if not self.app_allocations:
+            self.get_all_apps_allocations()
+        return self.app_allocations[app_name]
+
+    def get_all_apps_allocations(self) -> dict[str, AppSummary]:
+        # First pass, group all container_groups of the same app
+        app_info = defaultdict(list)
+        alloc = self.solution.allocation.values()
+        # Each element in alloc is a list of vms, so we can chain the iterables
+        # to write a single loop
+        for vm in chain.from_iterable(alloc):
+            for container_group in vm.cgs:
+                app_name = container_group.cc.app.name
+                # Add containergroup info to this app
+                app_info[app_name].append(
+                    ContainerGroupSummary(
+                        container_name=str(container_group.cc),
+                        app_name=container_group.cc.app.name,
+                        performance=container_group.cc.perf,
+                        replicas=container_group.replicas,
+                    )
+                )
+        # Second pass, compute totals per app
+        for app_name, containers in app_info.items():
+            total_replicas = sum(c.replicas for c in containers)
+            total_perf = sum(c.performance*c.replicas for c in containers)
+            app_summary = AppSummary(
+                app_name=app_name,
+                container_groups=tuple(containers),
+                total_replicas=total_replicas,
+                total_perf=total_perf,
+            )
+            self.app_allocations[app_name] = app_summary
+        return self.app_allocations
 
     def is_infeasible(self):
         return self.solution.is_infeasible()
