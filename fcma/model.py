@@ -386,6 +386,17 @@ class InstanceClassFamily:
             return True
         return False
 
+    def get_parent_fm_in(self, fms: tuple[InstanceClassFamily]) -> InstanceClassFamily:
+        """
+        Get a parent family in the list of families.
+        :param fms: Possible parent families.
+        :return: The parent family in the list, or itself if there are no parent families
+        """
+        for fm in fms:
+            if fm in self.parent_fms:
+                return fm
+        return self
+
 
 @dataclass(frozen=True)
 class ContainerClass:
@@ -820,6 +831,16 @@ class Solution:
     # Virtual machines with their container allocations
     allocation: dict[InstanceClassFamily, Allocation]
     statistics: SolvingStats  # Solution statistics
+
+    def is_infeasible(self) -> bool:
+        """
+        Return True if the solution is infeasible.
+        """
+
+        return self.statistics.final_status not in [
+            FcmaStatus.OPTIMAL,
+            FcmaStatus.FEASIBLE,
+        ]
 
 
 @dataclass(frozen=True)

@@ -66,7 +66,6 @@ class Fcma:
         :raises ValueError: When some input check fails.
         """
 
-        self.VERSION: str = "0.1.01 - March 14th, 16:20"
         self._system = system
         self._workloads = workloads
 
@@ -152,16 +151,15 @@ class Fcma:
             for ic in simplified_ics[fm]:
                 # Consider ics with enough cores to allocate the minimum cores required by the app
                 cores = system[app_fm].cores
-                mem = system[app_fm].mem[
-                    0
-                ]  # Memory for a non-aggregated container is the first value
+                # Memory for a non-aggregated container is the first value
+                mem = system[app_fm].mem[0]
                 perf = system[app_fm].perf
                 aggs = system[app_fm].aggs
                 if ic.cores + DELTA_CPU > cores:
                     result_cc = ContainerClass(
                         app=app,
                         ic=ic,
-                        fm=ic.family,
+                        fm=fm,
                         cores=cores,
                         mem=mem,
                         perf=perf,
@@ -429,8 +427,12 @@ class Fcma:
 
         # Organize instance and containers in the solution in families
         fms_sol = {}
+        # System instance class families. Those that appear in the system definition
+        system_fms = tuple(set(app_fm[1] for app_fm in self._system))
         for ic_sol_name, _ in ics_sol.items():
-            fm = self._ics[ic_sol_name].family
+            ic_fm = self._ics[ic_sol_name].family
+            # We are interested in a possible parent family in system definition
+            fm = ic_fm.get_parent_fm_in(system_fms)
             if fm not in fms_sol:
                 fms_sol[fm] = {
                     "n_nodes": {self._ics[ic_sol_name]: ics_sol[ic_sol_name]},
@@ -599,8 +601,9 @@ class Fcma:
 
         return n_nodes
 
+    @staticmethod
     def _add_vms(
-        self, fm: InstanceClassFamily, cc: ContainerClass, replicas: int
+        fm: InstanceClassFamily, cc: ContainerClass, replicas: int
     ) -> tuple[list[Vm], int]:
         """
         Add the required virtual machines to allocate the containers. Virtual machines must belong to
@@ -640,7 +643,7 @@ class Fcma:
                         new_vm = Vm(ics_in_fm[index - 1])
                         new_vm.history.append("Added")
                         replicas -= new_vm.allocate(cc, replicas)
-                        self._vms[fm].append(new_vm)
+                        vms.append(new_vm)
                     else:
                         for _ in range(n_vms):
                             new_vm = Vm(ic)
@@ -664,8 +667,12 @@ class Fcma:
         # pylint: disable-msg=too-many-locals
         # pylint: disable-msg=too-many-branches
 
-        # Get the instance class family from the pre-allocation solution
-        fm = list(fm_sol["n_nodes"].keys())[0].family
+        # Get the instance class family from the pre-allocation solution. Note that we are interested in
+        # the system family, which may be parenet of the instance class family
+        ic_fm = list(fm_sol["n_nodes"].keys())[0].family
+        system_fms = tuple(set(app_fm[1] for app_fm in self._system))
+        fm = ic_fm.get_parent_fm_in(system_fms)
+
         # The initial list of virtual machines (vms) come from the pre-allocation phase.
         # All the vms are empty, i.e, do not allocate any container at this time.
         vms = [Vm(ic) for ic in fm_sol["n_nodes"] for _ in range(fm_sol["n_nodes"][ic])]
@@ -759,7 +766,7 @@ class Fcma:
             # -------------------- (5) --------------------
             if n_containers > 0:
                 # At this point there is no choice but to add new nodes
-                added_vms, allocated_containers = self._add_vms(fm, cc, n_containers)
+                added_vms, allocated_containers = Fcma._add_vms(fm, cc, n_containers)
                 vms.extend(added_vms)
                 n_containers -= allocated_containers
 
@@ -951,6 +958,9 @@ class Fcma:
         :returns: The solution to the problem.
         """
 
+        # Reset virtual machine indexes
+        Vm.reset_ids()
+
         start_solving_time = current_time()
         self._solving_stats = SolvingStats()
         self._solving_pars = solving_pars
@@ -1009,7 +1019,8 @@ class Fcma:
         # Calculate final statistics
         # -----------------------------------------------------------
         self._solving_stats.total_seconds = current_time() - start_solving_time
-        # Allocation is always succesfull, so the final status comes from the previous status
+        # Allocation is always succesfull, so the final status comes from the previous status when
+        # there is neither virtual machine promotion nor addition.
         self._solving_stats.final_status = self._solving_stats.pre_allocation_status
         if FcmaStatus.is_valid(self._solving_stats.final_status):
             # Get the final cost, after the allocation
@@ -1017,6 +1028,8 @@ class Fcma:
             for fm, vms in self._vms.items():
                 for vm in vms:
                     self._solving_stats.final_cost += vm.ic.price
+            if self._solving_stats.final_cost > self._solving_stats.pre_allocation_cost:
+                self._solving_stats.final_status = FcmaStatus.FEASIBLE
 
         return Solution(self._vms, self._solving_stats)
 
