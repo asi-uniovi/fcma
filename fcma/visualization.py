@@ -210,7 +210,7 @@ class SolutionPrinter:
                 "VM",
                 "Container",
                 "App",
-                Column(header="Perf", justify="right"),
+                "Perf",
                 title=f"Container allocation for {app_name}",
             )
             total_app_replicas = 0
@@ -222,10 +222,10 @@ class SolutionPrinter:
                     app_row[0],
                     f"{app_row[1]} (x{app_row[3]})",
                     app_name,
-                    f"{app_row[2].to('req/s')} (x{app_row[3]})",
+                    f"{app_row[2].to('req/s').magnitude:.3f} req/s (x{app_row[3]})",
                 )
             table.add_section()
-            table.add_row("total:", f"{total_app_replicas}", "", f"{total_app_perf:.3f}")
+            table.add_row("total:", f"{total_app_replicas}", "", f"{total_app_perf.magnitude:.3f} req/s")
             tables[app_name] = table
 
         return tables
