@@ -5,6 +5,7 @@ Some tests based on the example provided in examples folder
 import json
 from pathlib import Path
 import pytest
+from pytest import approx
 from cloudmodel.unified.units import ComputationalUnits, RequestsPerTime, Storage
 from fcma import App, AppFamilyPerf, System, Fcma, SolvingPars, Solution
 from fcma.visualization import SolutionPrinter
@@ -127,7 +128,7 @@ def example1_solution(example1_data, example1_solving_pars) -> tuple[Fcma, Solvi
 
 
 @pytest.fixture(scope="module")
-def example1_expected_vms(request) -> list:
+def example1_expected_vms_SolutionPrinter(request) -> list:
     """Reads a json file (received as parameter) which contains the expected VMs and their prices.
     Returns a list of "rows", each one containing the name of a instance class with the number
     of instances in parenthesis, and the price of the instances of that class.
@@ -142,7 +143,7 @@ def example1_expected_vms(request) -> list:
 
 
 @pytest.fixture(scope="module")
-def example1_expected_allocation(request) -> dict:
+def example1_expected_allocation_SolutionPrinter(request) -> dict:
     """Reads a json file (received as parameter) which contains the allocation of containers
     for each app. Returns a dictionary in which the keys are the app names and the values
     are lists of "rows", each one containing the VM in which the container is deployed,
@@ -160,24 +161,13 @@ def example1_expected_allocation(request) -> dict:
 
 
 @pytest.fixture(scope="module")
-def expected_allocation(request) -> dict:
-    if request.param == 1:
-        expected_allocation = {  # num_cgroups, total_replicas, total_perf
-            "appA": (2, 8, 6),
-            "appB": (2, 3, 12.5),
-            "appC": (6, 9, 20),
-            "appD": (5, 19, 15.2),
-        }
-    elif request.param in [2, 3]:
-        expected_allocation = {  # num_cgroups, total_replicas, total_perf
-            "appA": (2, 8, 6),
-            "appB": (1, 2, 12),
-            "appC": (6, 9, 20),
-            "appD": (5, 19, 15.2),
-        }
-    else:
-        raise NotImplementedError
-    return expected_allocation
+def expected_solution_summary(request) -> SolutionSummary:
+    filename = request.param
+    path = Path(__file__).parent / filename
+    with open(path, "r") as file:
+        data = json.load(file)
+    ss = SolutionSummary.from_dict(data)
+    return ss
 
 
 # ==============================================================================
@@ -214,23 +204,25 @@ def test_example1_solution_is_feasible(example1_solution):
 # different values for the speed_level
 @pytest.mark.parametrize("example1_solving_pars", [1, 2, 3], indirect=["example1_solving_pars"])
 def test_example1_solution_is_valid(example1_solution):
-    fcma_problem, _, solution = example1_solution
-    # Print results
-    sp = SolutionPrinter(solution)
+    fcma_problem, *_ = example1_solution
 
     # Check the solution has no contradictions
     slack = fcma_problem.check_allocation()
 
 
-# Next test is parametrized, which means that it is run several times with
-# different values for the speed_level, and for each speed level it uses
-# a different file for expected results
+# ==============================================================================
+# Test the solution provided by SolutionPrinter
+# ==============================================================================
+
+
 @pytest.mark.parametrize(
-    "example1_solving_pars, example1_expected_vms",
+    "example1_solving_pars, example1_expected_vms_SolutionPrinter",
     [(1, "example1_expected_vms.json"), (2, "example1_expected_vms_v2.json")],
-    indirect=["example1_solving_pars", "example1_expected_vms"],
+    indirect=["example1_solving_pars", "example1_expected_vms_SolutionPrinter"],
 )
-def test_example1_solution_vms_and_prices(example1_solution, example1_expected_vms):
+def test_example1_solution_printer_vms_and_prices(
+    example1_solution, example1_expected_vms_SolutionPrinter
+):
     *_, solution = example1_solution
     sp = SolutionPrinter(solution)
 
@@ -239,9 +231,9 @@ def test_example1_solution_vms_and_prices(example1_solution, example1_expected_v
     # Organize by rows instead of columns
     solution_data = [col._cells for col in vm_table.columns]
     solution_data = [[*row] for row in zip(*solution_data)]
-    assert len(solution_data) == len(example1_expected_vms)
+    assert len(solution_data) == len(example1_expected_vms_SolutionPrinter)
     for row in solution_data:
-        assert row in example1_expected_vms
+        assert row in example1_expected_vms_SolutionPrinter
 
     # TODO: Make visible the variables used by SolutionPrinter so that the values
     #       can be compared instead of the formatted strings? Or externalize to
@@ -249,11 +241,13 @@ def test_example1_solution_vms_and_prices(example1_solution, example1_expected_v
 
 
 @pytest.mark.parametrize(
-    "example1_solving_pars, example1_expected_allocation",
+    "example1_solving_pars, example1_expected_allocation_SolutionPrinter",
     [(1, "example1_expected_allocation.json"), (2, "example1_expected_allocation_v2.json")],
-    indirect=["example1_solving_pars", "example1_expected_allocation"],
+    indirect=["example1_solving_pars", "example1_expected_allocation_SolutionPrinter"],
 )
-def test_example1_solution_apps_allocations(example1_solution, example1_expected_allocation):
+def test_example1_solution_printer_apps_allocations(
+    example1_solution, example1_expected_allocation_SolutionPrinter
+):
     fcma_problem, _, solution = example1_solution
     sp = SolutionPrinter(solution)
     apps_allocations = sp._get_app_tables()
@@ -264,7 +258,7 @@ def test_example1_solution_apps_allocations(example1_solution, example1_expected
     assert problem_apps == solution_apps
 
     def check_app_alloc(app, sol_data):
-        expected_alloc = example1_expected_allocation[app]
+        expected_alloc = example1_expected_allocation_SolutionPrinter[app]
         assert len(sol_data) == len(expected_alloc)
         for col in sol_data:
             assert col in expected_alloc
@@ -276,44 +270,76 @@ def test_example1_solution_apps_allocations(example1_solution, example1_expected
         check_app_alloc(app, solution_data)
 
 
-@pytest.mark.parametrize("example1_solving_pars", [1, 2], indirect=["example1_solving_pars"])
-def test_AllocationSummary_vms(example1_solution):
+# ==============================================================================
+# Smoke tests for SolutionSummary class
+# ==============================================================================
+
+
+@pytest.mark.parametrize("example1_solving_pars", [1, 2, 3], indirect=["example1_solving_pars"])
+def test_SolutionSummary_as_dict_and_back(example1_solution):
+    *_, solution = example1_solution
+    summary = SolutionSummary(solution)
+    summary_dict = summary.as_dict()
+    summary2 = SolutionSummary.from_dict(summary_dict)
+    assert summary.get_vm_summary() == summary2.get_vm_summary()
+    assert summary.get_all_apps_allocations() == summary2.get_all_apps_allocations()
+
+
+# ==============================================================================
+# Check example1 solutions with velocities 1, 2, and 3
+# ==============================================================================
+
+
+@pytest.mark.parametrize(
+    "example1_solving_pars, expected_solution_summary",
+    [
+        (1, "example1_solution_velocity1.json"),
+        (2, "example1_solution_velocity2.json"),
+        (3, "example1_solution_velocity3.json"),
+    ],
+    indirect=["example1_solving_pars", "expected_solution_summary"],
+)
+def test_example1_SolutionSummary_vms(example1_solution, expected_solution_summary):
     *_, solution = example1_solution
     summary = SolutionSummary(solution)
     vm_alloc = summary.get_vm_summary()
-    assert vm_alloc.total_num == 6
-    assert vm_alloc.cost.magnitude == pytest.approx(10.696, abs=1e-4)
+    expected_vm_alloc = expected_solution_summary.get_vm_summary()
+    assert vm_alloc == expected_vm_alloc
 
 
 @pytest.mark.parametrize(
-    "example1_solving_pars, expected_allocation",
-    [(1, 1), (2, 2), (3, 3)],
-    indirect=["example1_solving_pars", "expected_allocation"],
+    "example1_solving_pars, expected_solution_summary",
+    [
+        (1, "example1_solution_velocity1.json"),
+        (2, "example1_solution_velocity2.json"),
+        (3, "example1_solution_velocity3.json"),
+    ],
+    indirect=["example1_solving_pars", "expected_solution_summary"],
 )
-def test_AllocationSummary_apps(example1_solution, expected_allocation):
+def test_example1_SolutionSummary_all_apps(example1_solution, expected_solution_summary):
     *_, solution = example1_solution
     summary = SolutionSummary(solution)
     app_alloc = summary.get_all_apps_allocations()
-    assert len(app_alloc) == 4
-    for app, info in app_alloc.items():
-        assert len(info.container_groups) == expected_allocation[app][0]
-        assert info.total_replicas == expected_allocation[app][1]
-        assert info.total_perf.m_as("req/s") == pytest.approx(expected_allocation[app][2])
+    expected_app_alloc = expected_solution_summary.get_all_apps_allocations()
+    assert app_alloc == expected_app_alloc
 
 
 @pytest.mark.parametrize(
-    "example1_solving_pars, expected_allocation",
-    [(1, 1), (2, 2), (3, 3)],
-    indirect=["example1_solving_pars", "expected_allocation"],
+    "example1_solving_pars, expected_solution_summary",
+    [
+        (1, "example1_solution_velocity1.json"),
+        (2, "example1_solution_velocity2.json"),
+        (3, "example1_solution_velocity3.json"),
+    ],
+    indirect=["example1_solving_pars", "expected_solution_summary"],
 )
-def test_AllocationSummary_single_app(example1_solution, expected_allocation):
+def test_example1_SolutionSummary_single_app(example1_solution, expected_solution_summary):
     *_, solution = example1_solution
     summary = SolutionSummary(solution)
+    expected_allocation = expected_solution_summary.get_all_apps_allocations()
     for app in expected_allocation:
         info = summary.get_app_allocation_summary(app)
-        assert len(info.container_groups) == expected_allocation[app][0]
-        assert info.total_replicas == expected_allocation[app][1]
-        assert info.total_perf.m_as("req/s") == pytest.approx(expected_allocation[app][2])
+        assert info == expected_allocation[app]
 
 
 # # print("\n----------- Solution check --------------")
