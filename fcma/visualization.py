@@ -156,7 +156,7 @@ class SolutionPrinter:
         for vm in vm_summary.vms:
             table.add_row(f"{vm.ic_name} (x{vm.total_num})", f"{vm.cost:.3f}")
         table.add_section()
-        table.add_row(f"Total: {vm_summary.total_num}", f"{vm_summary.cost:.3f}")
+        table.add_row(f"Total: {vm_summary.total_num}", f"{vm_summary.total_cost:.3f}")
         return table
 
     def _get_app_tables(self) -> dict[str, Table]:

@@ -5,7 +5,7 @@ Data classes for containers and nodes of the Fast Container and Machine Allocato
 from __future__ import annotations
 from collections import defaultdict
 import copy
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from enum import Enum
 from itertools import chain
 from math import floor
@@ -892,7 +892,7 @@ class SingleVmSummary:
 class AllVmSummary:
     vms: tuple[SingleVmSummary, ...]
     total_num: int
-    cost: CurrencyPerTime
+    total_cost: CurrencyPerTime
 
 
 @dataclass(frozen=True)
@@ -919,22 +919,25 @@ class SolutionSummary:
     """
 
     def __init__(self, solution: Solution) -> None:
-        self.solution = solution
-        self.app_allocations = {}
+        self._solution = solution
+        self.app_allocations = None
+        self.vm_summary = None
 
     def get_vm_summary(self) -> AllVmSummary:
+        if self.vm_summary is not None:
+            return self.vm_summary
         num_vms = defaultdict(int)
         ic_prices = defaultdict(lambda: CurrencyPerTime("0 usd/hour"))
         total_num = 0
         total_price = CurrencyPerTime("0 usd/hour")
-        for family, vm_list in self.solution.allocation.items():
+        for family, vm_list in self._solution.allocation.items():
             for vm in vm_list:
                 ic_name = vm.ic.name
                 num_vms[ic_name] += 1
                 ic_prices[ic_name] += vm.ic.price
                 total_num += 1
                 total_price += vm.ic.price
-        return AllVmSummary(
+        self.vm_summary = AllVmSummary(
             vms=tuple(
                 SingleVmSummary(
                     ic_name=ic_name, total_num=num_vms[ic_name], cost=ic_prices[ic_name]
@@ -942,8 +945,9 @@ class SolutionSummary:
                 for ic_name in num_vms
             ),
             total_num=total_num,
-            cost=total_price,
+            total_cost=total_price,
         )
+        return self.vm_summary
 
     def get_app_allocation_summary(self, app_name) -> AppSummary:
         if not self.app_allocations:
@@ -951,9 +955,12 @@ class SolutionSummary:
         return self.app_allocations[app_name]
 
     def get_all_apps_allocations(self) -> dict[str, AppSummary]:
+        if self.app_allocations is not None:
+            return self.app_allocations
+        self.app_allocations = {}
         # First pass, group all container_groups of the same app
         app_info = defaultdict(list)
-        alloc = self.solution.allocation.values()
+        alloc = self._solution.allocation.values()
         # Each element in alloc is a list of vms, so we can chain the iterables
         # to write a single loop
         for vm in chain.from_iterable(alloc):
@@ -967,13 +974,13 @@ class SolutionSummary:
                         app_name=container_group.cc.app.name,
                         performance=container_group.cc.perf,
                         replicas=container_group.replicas,
-                        cores=container_group.cc.cores
+                        cores=container_group.cc.cores,
                     )
                 )
         # Second pass, compute totals per app
         for app_name, containers in app_info.items():
             total_replicas = sum(c.replicas for c in containers)
-            total_perf = sum(c.performance*c.replicas for c in containers)
+            total_perf = sum(c.performance * c.replicas for c in containers)
             app_summary = AppSummary(
                 app_name=app_name,
                 container_groups=tuple(containers),
@@ -984,7 +991,80 @@ class SolutionSummary:
         return self.app_allocations
 
     def is_infeasible(self):
-        return self.solution.is_infeasible()
+        return self._solution.is_infeasible()
+
+    def as_dict(self, cost_unit="usd/h", perf_unit="req/s", cores_unit="mcores"):
+        """Returns the summary as a dictionary suitable for json serializing
+
+        In order to do that, units have to removed, so some default units are assumed
+        for the json. By default, cost will be expressed in usd/h and requests in req/s
+        """
+        vms = asdict(self.get_vm_summary())
+        vms["total_cost"] = vms["total_cost"].m_as(cost_unit)
+        apps = {app: asdict(info) for app, info in self.get_all_apps_allocations().items()}
+
+        # Remove units
+        for vm in vms["vms"]:
+            vm["cost"] = vm["cost"].m_as(cost_unit)
+        for app, info in apps.items():
+            info["total_perf"] = info["total_perf"].m_as(perf_unit)
+            for cg in info["container_groups"]:
+                cg["performance"] = cg["performance"].m_as(perf_unit)
+                cg["cores"] = cg["cores"].m_as(cores_unit)
+        return {
+            "vms": vms,
+            "apps": apps,
+            "units": {"cost": cost_unit, "perf": perf_unit, "cores": cores_unit},
+        }
+
+    @classmethod
+    def from_dict(cls, summary_dict):
+        self = cls(solution=None)
+        cost_unit = summary_dict["units"]["cost"]
+        perf_unit = summary_dict["units"]["perf"]
+        cores_unit = summary_dict["units"]["cores"]
+
+        # Read vms summary
+        vms = summary_dict["vms"]
+        vms["total_cost"] = CurrencyPerTime(f"{vms['total_cost']} {cost_unit}")
+        vms["vms"] = [
+            SingleVmSummary(
+                ic_name=vm["ic_name"],
+                total_num=vm["total_num"],
+                cost=CurrencyPerTime(f"{vm['cost']} {cost_unit}"),
+            )
+            for vm in vms["vms"]
+        ]
+        self.vm_summary = AllVmSummary(
+            vms=tuple(vms["vms"]),
+            total_num=vms["total_num"],
+            total_cost=vms["total_cost"],
+        )
+
+        # Read apps summary
+        apps = summary_dict["apps"]
+        app_allocations = {}
+        for app, info in apps.items():
+            info["total_perf"] = RequestsPerTime(f"{info['total_perf']} {perf_unit}")
+            info["container_groups"] = [
+                ContainerGroupSummary(
+                    container_name=cg["container_name"],
+                    vm_name=cg["vm_name"],
+                    app_name=cg["app_name"],
+                    performance=RequestsPerTime(f"{cg['performance']} {perf_unit}"),
+                    replicas=cg["replicas"],
+                    cores=ComputationalUnits(f"{cg['cores']} {cores_unit}"),
+                )
+                for cg in info["container_groups"]
+            ]
+            app_allocations[app] = AppSummary(
+                app_name=app,
+                container_groups=tuple(info["container_groups"]),
+                total_replicas=info["total_replicas"],
+                total_perf=info["total_perf"],
+            )
+        self.app_allocations = app_allocations
+        return self
 
 
 # One system is defined by application performance parameters for pairs application and family
