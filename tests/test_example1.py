@@ -146,7 +146,7 @@ def test_example1_solving_config(example1_solving_pars):
 def test_example1_solution_is_feasible(example1_solution, capsys):
     *_, solution = example1_solution
     # Print results
-    sp = SolutionPrinter(solution.allocation, solution.statistics)
+    sp = SolutionPrinter(solution.allocation, solution._statistics)
 
     # Check the solution is feasible
     assert sp._is_infeasible_sol() == False
@@ -164,7 +164,7 @@ def test_example1_solution_is_valid(example1_solution):
 # @pytest.mark.skip(reason="Checking the printed output is no the best way")
 def test_example1_printed_solution_vms_and_prices(example1_solution, capsys):
     *_, solution = example1_solution
-    sp = SolutionPrinter(solution.allocation, solution.statistics)
+    sp = SolutionPrinter(solution.allocation, solution._statistics)
 
     # Check the vms and prices
 
@@ -190,7 +190,7 @@ def test_example1_printed_solution_vms_and_prices(example1_solution, capsys):
 
 def test_example1_solution_vms_and_prices(example1_solution):
     *_, solution = example1_solution
-    sp = SolutionPrinter(solution.allocation, solution.statistics)
+    sp = SolutionPrinter(solution.allocation)
 
     # Another way, get the rich table and inspect the contents
     vm_table = sp._get_vm_table()

@@ -609,7 +609,7 @@ class Vm:
     def is_allocatable_cc(self, cc: ContainerClass, replicas: int) -> bool:
         """
         Return if the given number of replicas of the container class ar allocatable
-        in the viruak machine.
+        in the virtual machine.
         :param cc: Container class.
         :param replicas: Number of replicas of the container class.
         :return: True if allocation is possible and False otherwise.

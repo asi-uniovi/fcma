@@ -80,10 +80,15 @@ def check_inputs(system, workloads):
 
     # Check that there is at least one instance class able to allocate any application
     for app_fm in system:
+        app = app_fm[0]
         fm = app_fm[1]
         requested_cores = system[app_fm].cores
         requested_mem = system[app_fm].mem
-        fm.check_fesibility(requested_cores, requested_mem)
+        if not fm.check_fesibility(requested_cores, requested_mem):
+            raise ValueError(
+                f"There is no instance class in {fm} family wit enough cores "
+                f"or memory for {app.name} application"
+            )
 
 
 def remove_ics_same_param_higher_price(

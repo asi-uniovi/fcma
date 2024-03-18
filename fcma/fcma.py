@@ -909,8 +909,8 @@ class Fcma:
 
         # Aggregate nodes in the solution to improve the probability of allocation success
         fms_sol = None
-        problem_status = []
         if FcmaStatus.is_valid(self._solving_stats.partial_ilp_status):
+            problem_status = []
             # Get instance classes and container classes in the solution organized by families
             fms_sol = self._get_fms_sol()
             # Aggregate nodes for each instance class in the solution
@@ -923,7 +923,9 @@ class Fcma:
                     [self._solving_stats.partial_ilp_status, agg_status]
                 )
                 problem_status.append(worst_status)
-        self._solving_stats.pre_allocation_status = FcmaStatus.get_worst_status(problem_status)
+            self._solving_stats.pre_allocation_status = FcmaStatus.get_worst_status(problem_status)
+        else:
+            self._solving_stats.pre_allocation_status = self._solving_stats.partial_ilp_status
 
         return fms_sol
 
