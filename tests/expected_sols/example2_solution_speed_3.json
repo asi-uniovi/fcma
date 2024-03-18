@@ -1,0 +1,72 @@
+{
+  "vms": {
+    "vms": [
+      {
+        "ic_name": "c6i.2xlarge",
+        "total_num": 1,
+        "cost": 0.3648
+      },
+      {
+        "ic_name": "c6i.large",
+        "total_num": 1,
+        "cost": 0.0912
+      }
+    ],
+    "total_num": 2,
+    "total_cost": 0.456
+  },
+  "apps": {
+    "appA": {
+      "app_name": "appA",
+      "container_groups": [
+        {
+          "container_name": "appA-c6i_m6i_r6i",
+          "vm_name": "c6i.2xlarge[0]",
+          "app_name": "appA",
+          "performance": 0.2,
+          "replicas": 4,
+          "cores": 960.0
+        },
+        {
+          "container_name": "appA-c6i_m6i_r6i",
+          "vm_name": "c6i.2xlarge[0]",
+          "app_name": "appA",
+          "performance": 0.025,
+          "replicas": 1,
+          "cores": 120.0
+        },
+        {
+          "container_name": "appA-c6i_m6i_r6i",
+          "vm_name": "c6i.large[0]",
+          "app_name": "appA",
+          "performance": 0.1,
+          "replicas": 1,
+          "cores": 480.0
+        },
+        {
+          "container_name": "appA-c6i_m6i_r6i",
+          "vm_name": "c6i.large[0]",
+          "app_name": "appA",
+          "performance": 0.05,
+          "replicas": 1,
+          "cores": 240.0
+        },
+        {
+          "container_name": "appA-c6i_m6i_r6i",
+          "vm_name": "c6i.large[0]",
+          "app_name": "appA",
+          "performance": 0.025,
+          "replicas": 1,
+          "cores": 120.0
+        }
+      ],
+      "total_replicas": 8,
+      "total_perf": 1.0
+    }
+  },
+  "units": {
+    "cost": "usd/h",
+    "perf": "req/s",
+    "cores": "mcores"
+  }
+}
