@@ -1,0 +1,175 @@
+{
+  "vms": {
+    "vms": [
+      {
+        "ic_name": "c5.4xlarge",
+        "total_num": 1,
+        "cost": 0.768
+      },
+      {
+        "ic_name": "c6g.4xlarge",
+        "total_num": 2,
+        "cost": 1.168
+      },
+      {
+        "ic_name": "c6g.12xlarge",
+        "total_num": 1,
+        "cost": 1.7519999999999998
+      },
+      {
+        "ic_name": "c6g.24xlarge",
+        "total_num": 2,
+        "cost": 7.007999999999999
+      }
+    ],
+    "total_num": 6,
+    "total_cost": 10.695999999999998
+  },
+  "apps": {
+    "appA": {
+      "app_name": "appA",
+      "container_groups": [
+        {
+          "container_name": "appA-c5_m5_r5",
+          "vm_name": "c5.4xlarge[0]",
+          "app_name": "appA",
+          "performance": 0.8,
+          "replicas": 7,
+          "cores": 800.0
+        },
+        {
+          "container_name": "appA-c5_m5_r5",
+          "vm_name": "c5.4xlarge[0]",
+          "app_name": "appA",
+          "performance": 0.4,
+          "replicas": 1,
+          "cores": 400.0
+        }
+      ],
+      "total_replicas": 8,
+      "total_perf": 6.0
+    },
+    "appB": {
+      "app_name": "appB",
+      "container_groups": [
+        {
+          "container_name": "appB-c5_m5_r5",
+          "vm_name": "c5.4xlarge[0]",
+          "app_name": "appB",
+          "performance": 6.0,
+          "replicas": 2,
+          "cores": 960.0
+        }
+      ],
+      "total_replicas": 2,
+      "total_perf": 12.0
+    },
+    "appD": {
+      "app_name": "appD",
+      "container_groups": [
+        {
+          "container_name": "appD-c6g_m6g_r6g",
+          "vm_name": "c6g.4xlarge[1]",
+          "app_name": "appD",
+          "performance": 0.8,
+          "replicas": 1,
+          "cores": 6500.0
+        },
+        {
+          "container_name": "appD-c6g_m6g_r6g",
+          "vm_name": "c6g.4xlarge[0]",
+          "app_name": "appD",
+          "performance": 0.8,
+          "replicas": 1,
+          "cores": 6500.0
+        },
+        {
+          "container_name": "appD-c6g_m6g_r6g",
+          "vm_name": "c6g.12xlarge[0]",
+          "app_name": "appD",
+          "performance": 0.8,
+          "replicas": 3,
+          "cores": 6500.0
+        },
+        {
+          "container_name": "appD-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[0]",
+          "app_name": "appD",
+          "performance": 0.8,
+          "replicas": 7,
+          "cores": 6500.0
+        },
+        {
+          "container_name": "appD-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[1]",
+          "app_name": "appD",
+          "performance": 0.8,
+          "replicas": 7,
+          "cores": 6500.0
+        }
+      ],
+      "total_replicas": 19,
+      "total_perf": 15.2
+    },
+    "appC": {
+      "app_name": "appC",
+      "container_groups": [
+        {
+          "container_name": "appC-c6g_m6g_r6g",
+          "vm_name": "c6g.12xlarge[0]",
+          "app_name": "appC",
+          "performance": 3.2,
+          "replicas": 4,
+          "cores": 960.0
+        },
+        {
+          "container_name": "appC-c6g_m6g_r6g",
+          "vm_name": "c6g.12xlarge[0]",
+          "app_name": "appC",
+          "performance": 1.6,
+          "replicas": 1,
+          "cores": 480.0
+        },
+        {
+          "container_name": "appC-c6g_m6g_r6g",
+          "vm_name": "c6g.12xlarge[0]",
+          "app_name": "appC",
+          "performance": 0.4,
+          "replicas": 1,
+          "cores": 120.0
+        },
+        {
+          "container_name": "appC-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[0]",
+          "app_name": "appC",
+          "performance": 3.2,
+          "replicas": 1,
+          "cores": 960.0
+        },
+        {
+          "container_name": "appC-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[0]",
+          "app_name": "appC",
+          "performance": 1.6,
+          "replicas": 1,
+          "cores": 480.0
+        },
+        {
+          "container_name": "appC-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[0]",
+          "app_name": "appC",
+          "performance": 0.4,
+          "replicas": 1,
+          "cores": 120.0
+        }
+      ],
+      "total_replicas": 9,
+      "total_perf": 20.0
+    }
+  },
+  "units": {
+    "cost": "usd/h",
+    "perf": "req/s",
+    "cores": "mcores"
+  }
+}

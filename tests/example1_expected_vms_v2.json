@@ -1,0 +1,16 @@
+[
+    [
+        "c5.4xlarge (x1)",
+        "c6g.4xlarge (x2)",
+        "c6g.12xlarge (x1)",
+        "c6g.24xlarge (x2)",
+        "Total: 6"
+    ],
+    [
+        "0.768 usd / hour",
+        "1.168 usd / hour",
+        "1.752 usd / hour",
+        "7.008 usd / hour",
+        "10.696 usd / hour"
+    ]
+]

@@ -1,0 +1,114 @@
+{
+    "appA": [
+        [
+            "c5.4xlarge[0]",
+            "c5.4xlarge[0]",
+            "total:"
+        ],
+        [
+            "appA-c5_m5_r5-800 mcores (x7)",
+            "appA-c5_m5_r5-400 mcores (x1)",
+            "8"
+        ],
+        [
+            "appA",
+            "appA",
+            ""
+        ],
+        [
+            "0.800 req/s (x7)",
+            "0.400 req/s (x1)",
+            "6.000 req/s"
+        ]
+    ],
+    "appB": [
+        [
+            "c5.4xlarge[0]",
+            "total:"
+        ],
+        [
+            "appB-c5_m5_r5-960 mcores (x2)",
+            "2"
+        ],
+        [
+            "appB",
+            ""
+        ],
+        [
+            "6.000 req/s (x2)",
+            "12.000 req/s"
+        ]
+    ],
+    "appD": [
+        [
+            "c6g.4xlarge[1]",
+            "c6g.4xlarge[0]",
+            "c6g.12xlarge[0]",
+            "c6g.24xlarge[0]",
+            "c6g.24xlarge[1]",
+            "total:"
+        ],
+        [
+            "appD-c6g_m6g_r6g-6500 mcores (x1)",
+            "appD-c6g_m6g_r6g-6500 mcores (x1)",
+            "appD-c6g_m6g_r6g-6500 mcores (x3)",
+            "appD-c6g_m6g_r6g-6500 mcores (x7)",
+            "appD-c6g_m6g_r6g-6500 mcores (x7)",
+            "19"
+        ],
+        [
+            "appD",
+            "appD",
+            "appD",
+            "appD",
+            "appD",
+            ""
+        ],
+        [
+            "0.800 req/s (x1)",
+            "0.800 req/s (x1)",
+            "0.800 req/s (x3)",
+            "0.800 req/s (x7)",
+            "0.800 req/s (x7)",
+            "15.200 req/s"
+        ]
+    ],
+    "appC": [
+        [
+            "c6g.12xlarge[0]",
+            "c6g.12xlarge[0]",
+            "c6g.12xlarge[0]",
+            "c6g.24xlarge[0]",
+            "c6g.24xlarge[0]",
+            "c6g.24xlarge[0]",
+            "total:"
+        ],
+        [
+            "appC-c6g_m6g_r6g-960 mcores (x4)",
+            "appC-c6g_m6g_r6g-480 mcores (x1)",
+            "appC-c6g_m6g_r6g-120 mcores (x1)",
+            "appC-c6g_m6g_r6g-960 mcores (x1)",
+            "appC-c6g_m6g_r6g-480 mcores (x1)",
+            "appC-c6g_m6g_r6g-120 mcores (x1)",
+            "9"
+        ],
+        [
+            "appC",
+            "appC",
+            "appC",
+            "appC",
+            "appC",
+            "appC",
+            ""
+        ],
+        [
+            "3.200 req/s (x4)",
+            "1.600 req/s (x1)",
+            "0.400 req/s (x1)",
+            "3.200 req/s (x1)",
+            "1.600 req/s (x1)",
+            "0.400 req/s (x1)",
+            "20.000 req/s"
+        ]
+    ]
+}
