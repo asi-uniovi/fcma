@@ -18,6 +18,14 @@ from .examples import example1, example2, example3, example4
 from cloudmodel.unified.units import CurrencyPerTime
 
 
+# Global variables for the different combinations
+examples = [example1, example2, example3, example4]
+speeds = [1, 2, 3]
+cases_with_solutions = [
+    (ex, sp, f"{ex.__name__}_solution_speed_{sp}.json") for ex, sp in product(examples, speeds)
+]
+
+
 # ==============================================================================
 # Fixtures
 # ==============================================================================
@@ -114,9 +122,6 @@ def expected_solution_summary(request) -> SolutionSummary:
     ss = SolutionSummary.from_dict(data)
     return ss
 
-
-examples = [example1, example2, example3, example4]
-speeds = [1, 2, 3]
 
 # ==============================================================================
 # Tests
@@ -338,12 +343,9 @@ def test_SolutionSummary_as_dict_and_back(example_solution):
 # ==============================================================================
 
 
-cases = [(ex, sp, f"{ex.__name__}_solution_speed_{sp}.json") for ex, sp in product(examples, speeds)]
-
-
 @pytest.mark.parametrize(
     "example_data, example_solving_pars, expected_solution_summary",
-    cases,
+    cases_with_solutions,
     indirect=["example_data", "example_solving_pars", "expected_solution_summary"],
 )
 def test_example1_SolutionSummary_vms(example_solution, expected_solution_summary):
@@ -356,7 +358,7 @@ def test_example1_SolutionSummary_vms(example_solution, expected_solution_summar
 
 @pytest.mark.parametrize(
     "example_data, example_solving_pars, expected_solution_summary",
-    cases,
+    cases_with_solutions,
     indirect=["example_data", "example_solving_pars", "expected_solution_summary"],
 )
 def test_example1_SolutionSummary_all_apps(example_solution, expected_solution_summary):
@@ -370,7 +372,7 @@ def test_example1_SolutionSummary_all_apps(example_solution, expected_solution_s
 # No need to test all cases for this, as the previous tests already check the contents
 @pytest.mark.parametrize(
     "example_data, example_solving_pars, expected_solution_summary",
-    cases[:2],
+    cases_with_solutions[:2],
     indirect=["example_data", "example_solving_pars", "expected_solution_summary"],
 )
 def test_example1_SolutionSummary_single_app(example_solution, expected_solution_summary):
