@@ -926,6 +926,11 @@ class SolutionSummary:
     def get_vm_summary(self) -> AllVmSummary:
         if self.vm_summary is not None:
             return self.vm_summary
+        if self.is_infeasible():
+            self.vm_summary = AllVmSummary(
+                vms=tuple(), total_cost=CurrencyPerTime("0 usd/hour"), total_num=0
+            )
+            return self.vm_summary
         num_vms = defaultdict(int)
         ic_prices = defaultdict(lambda: CurrencyPerTime("0 usd/hour"))
         total_num = 0
@@ -958,6 +963,9 @@ class SolutionSummary:
         if self.app_allocations is not None:
             return self.app_allocations
         self.app_allocations = {}
+        if self.is_infeasible():
+            return self.app_allocations
+
         # First pass, group all container_groups of the same app
         app_info = defaultdict(list)
         alloc = self._solution.allocation.values()

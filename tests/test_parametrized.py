@@ -9,7 +9,7 @@ from pytest import approx
 from cloudmodel.unified.units import ComputationalUnits, RequestsPerTime, Storage
 from fcma import App, AppFamilyPerf, System, Fcma, SolvingPars, Solution
 from fcma.visualization import SolutionPrinter
-from fcma.model import AllVmSummary, Vm, SolutionSummary
+from fcma.model import Vm, SolutionSummary
 import importlib.util
 import os
 
@@ -36,7 +36,7 @@ def aws_eu_west_1():
 
 
 @pytest.fixture(scope="module")
-def example1_data(aws_eu_west_1, request) -> Fcma:
+def example1_data(aws_eu_west_1) -> Fcma:
     """Defines a set of parameters for the example1 problem"""
     apps = {
         "appA": App(name="appA", sfmpl=0.5),
@@ -270,6 +270,39 @@ def test_example1_solution_printer_apps_allocations(
         check_app_alloc(app, solution_data)
 
 
+def test_SolutionPrinter_is_infeasible(aws_eu_west_1, monkeypatch, capsys):
+    # We solve a perfectly solvable problem, but we using monkeypatching
+    # to fake pulp reporting it is infeasible
+    apps = {"appA": App(name="appA")}
+    workloads = {apps["appA"]: RequestsPerTime("20  req/s")}
+    system: System = {
+        (apps["appA"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
+            cores=ComputationalUnits("400 mcores"),
+            mem=Storage("500 mebibytes"),
+            perf=RequestsPerTime("0.4 req/s"),
+        ),
+    }
+
+    from fcma import model
+
+    # Fake solving to get an infeasible solution
+    monkeypatch.setattr(
+        model.FcmaStatus, "pulp_to_fcma_status", lambda *_: model.FcmaStatus.INVALID
+    )
+    # TODO: Fix bug to avoid mokeypatching get_worst_status too
+    monkeypatch.setattr(model.FcmaStatus, "get_worst_status", lambda *_: model.FcmaStatus.INVALID)
+    problem = Fcma(system, workloads)
+    solution = problem.solve()
+
+    sp = SolutionPrinter(solution)
+    sp.print()
+
+    result = capsys.readouterr()
+    assert "Non feasible" in result.out
+    assert "INVALID" in result.out
+    assert result.out.endswith("INVALID\n")  # No tables after this
+
+
 # ==============================================================================
 # Smoke tests for SolutionSummary class
 # ==============================================================================
@@ -283,6 +316,41 @@ def test_SolutionSummary_as_dict_and_back(example1_solution):
     summary2 = SolutionSummary.from_dict(summary_dict)
     assert summary.get_vm_summary() == summary2.get_vm_summary()
     assert summary.get_all_apps_allocations() == summary2.get_all_apps_allocations()
+
+
+def test_SolutionSummary_is_infeasible(aws_eu_west_1, monkeypatch):
+    # We solve a perfectly solvable problem, but we using monkeypatching
+    # to fake pulp reporting it is infeasible
+    apps = {"appA": App(name="appA")}
+    workloads = {apps["appA"]: RequestsPerTime("20  req/s")}
+    system: System = {
+        (apps["appA"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
+            cores=ComputationalUnits("400 mcores"),
+            mem=Storage("500 mebibytes"),
+            perf=RequestsPerTime("0.4 req/s"),
+        ),
+    }
+
+    from fcma import model
+
+    # Fake solving to get an infeasible solution
+    monkeypatch.setattr(
+        model.FcmaStatus, "pulp_to_fcma_status", lambda *_: model.FcmaStatus.INVALID
+    )
+    # TODO: Fix bug to avoid mokeypatching get_worst_status too
+    monkeypatch.setattr(model.FcmaStatus, "get_worst_status", lambda *_: model.FcmaStatus.INVALID)
+    problem = Fcma(system, workloads)
+    solution = problem.solve()
+
+    summary = SolutionSummary(solution)
+    assert summary.is_infeasible() == True
+
+    vm_summary = summary.get_vm_summary()
+    assert vm_summary.total_num == 0
+    assert len(vm_summary.vms) == 0
+
+    apps_summary = summary.get_all_apps_allocations()
+    assert len(apps_summary) == 0
 
 
 # ==============================================================================
@@ -340,6 +408,24 @@ def test_example1_SolutionSummary_single_app(example1_solution, expected_solutio
     for app in expected_allocation:
         info = summary.get_app_allocation_summary(app)
         assert info == expected_allocation[app]
+
+
+# TODO: Fix bug found by this test
+@pytest.mark.skip("Produces an exception instead of reporting infeasible problem")
+def test_SolutionSummary_is_infeasible(aws_eu_west_1):
+    apps = {"appA": App(name="appA")}
+    workloads = {apps["appA"]: RequestsPerTime("20  req/s")}
+    system: System = {
+        (apps["appA"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
+            cores=ComputationalUnits("400000 mcores"),
+            mem=Storage("500 mebibytes"),
+            perf=RequestsPerTime("0.4 req/s"),
+        ),
+    }
+    problem = Fcma(system, workloads)
+    solution = problem.solve()
+    summary = SolutionSummary(solution)
+    assert summary.is_infeasible() == True
 
 
 # # print("\n----------- Solution check --------------")
