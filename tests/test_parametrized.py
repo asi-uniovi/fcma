@@ -210,6 +210,21 @@ def test_example1_solution_is_valid(example1_solution):
     slack = fcma_problem.check_allocation()
 
 
+def test_bad_problem_is_rejected(aws_eu_west_1):
+    apps = {"appA": App(name="appA")}
+    workloads = {apps["appA"]: RequestsPerTime("20  req/s")}
+    system: System = {
+        (apps["appA"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
+            cores=ComputationalUnits("400000 mcores"),
+            mem=Storage("500 mebibytes"),
+            perf=RequestsPerTime("0.4 req/s"),
+        ),
+    }
+    with pytest.raises(ValueError) as excinfo:
+        problem = Fcma(system, workloads)
+    assert "enough cores or memory" in str(excinfo.value)
+
+
 # ==============================================================================
 # Test the solution provided by SolutionPrinter
 # ==============================================================================
@@ -408,24 +423,6 @@ def test_example1_SolutionSummary_single_app(example1_solution, expected_solutio
     for app in expected_allocation:
         info = summary.get_app_allocation_summary(app)
         assert info == expected_allocation[app]
-
-
-# TODO: Fix bug found by this test
-@pytest.mark.skip("Produces an exception instead of reporting infeasible problem")
-def test_SolutionSummary_is_infeasible(aws_eu_west_1):
-    apps = {"appA": App(name="appA")}
-    workloads = {apps["appA"]: RequestsPerTime("20  req/s")}
-    system: System = {
-        (apps["appA"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
-            cores=ComputationalUnits("400000 mcores"),
-            mem=Storage("500 mebibytes"),
-            perf=RequestsPerTime("0.4 req/s"),
-        ),
-    }
-    problem = Fcma(system, workloads)
-    solution = problem.solve()
-    summary = SolutionSummary(solution)
-    assert summary.is_infeasible() == True
 
 
 # # print("\n----------- Solution check --------------")
