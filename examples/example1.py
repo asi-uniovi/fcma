@@ -4,9 +4,11 @@ A simple example of how to use the Fcma class
 
 import logging
 from cloudmodel.unified.units import ComputationalUnits, RequestsPerTime, Storage
+from fcma.model import SolutionSummary
 import aws_eu_west_1
 from fcma import App, AppFamilyPerf, System, Fcma, SolvingPars
 from fcma.visualization import SolutionPrinter
+import sys
 
 # Set logging level
 logging.basicConfig(level=logging.INFO)
@@ -106,3 +108,10 @@ for attribute in dir(slack):
     if attribute.endswith("percentage"):
         print(f"{attribute}: {getattr(slack, attribute): .2f} %")
 print("-----------------------------------------")
+
+
+if "json" in sys.argv:
+    import json
+    ss = SolutionSummary(solution)
+    with open("solution.json", "w") as file:
+        file.write(json.dumps(ss.as_dict(), indent=2))

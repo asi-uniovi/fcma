@@ -66,6 +66,7 @@ class Fcma:
         :raises ValueError: When some input check fails.
         """
 
+        self.VERSION: str = "0.1.01 - March 14th, 16:20"
         self._system = system
         self._workloads = workloads
 

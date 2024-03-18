@@ -1,15 +1,15 @@
 {
     "appA": [
         ["c5.4xlarge[0]", "c5.4xlarge[0]", "total:"],
-        ["appA-c5-800 mcores (x7)", "appA-c5-400 mcores (x1)", "8"],
+        ["appA-c5_m5_r5-800 mcores (x7)", "appA-c5_m5_r5-400 mcores (x1)", "8"],
         ["appA", "appA", ""],
-        ["0.8 req / second (x7)", "0.4 req / second (x1)", "6.000 req / second"]
+        ["0.800 req/s (x7)", "0.400 req/s (x1)", "6.000 req/s"]
     ],
     "appB": [
         ["c5.4xlarge[0]", "c5.4xlarge[0]", "total:"],
-        ["appB-c5-960 mcores (x2)", "appB-c5-80 mcores (x1)", "3"],
+        ["appB-c5_m5_r5-960 mcores (x2)", "appB-c5_m5_r5-80 mcores (x1)", "3"],
         ["appB", "appB", ""],
-        ["6.0 req / second (x2)", "0.5 req / second (x1)", "12.500 req / second"]
+        ["6.000 req/s (x2)", "0.500 req/s (x1)", "12.500 req/s"]
     ],
     "appC": [
         [
@@ -22,23 +22,23 @@
             "total:"
         ],
         [
-            "appC-c6g-960 mcores (x4)",
-            "appC-c6g-480 mcores (x1)",
-            "appC-c6g-120 mcores (x1)",
-            "appC-c6g-960 mcores (x1)",
-            "appC-c6g-480 mcores (x1)",
-            "appC-c6g-120 mcores (x1)",
+            "appC-c6g_m6g_r6g-960 mcores (x4)",
+            "appC-c6g_m6g_r6g-480 mcores (x1)",
+            "appC-c6g_m6g_r6g-120 mcores (x1)",
+            "appC-c6g_m6g_r6g-960 mcores (x1)",
+            "appC-c6g_m6g_r6g-480 mcores (x1)",
+            "appC-c6g_m6g_r6g-120 mcores (x1)",
             "9"
         ],
         ["appC", "appC", "appC", "appC", "appC", "appC", ""],
         [
-            "3.2 req / second (x4)",
-            "1.6 req / second (x1)",
-            "0.4 req / second (x1)",
-            "3.2 req / second (x1)",
-            "1.6 req / second (x1)",
-            "0.4 req / second (x1)",
-            "20.000 req / second"
+            "3.200 req/s (x4)",
+            "1.600 req/s (x1)",
+            "0.400 req/s (x1)",
+            "3.200 req/s (x1)",
+            "1.600 req/s (x1)",
+            "0.400 req/s (x1)",
+            "20.000 req/s"
         ]
     ],
     "appD": [
@@ -51,21 +51,21 @@
             "total:"
         ],
         [
-            "appD-c6g-6500 mcores (x1)",
-            "appD-c6g-6500 mcores (x1)",
-            "appD-c6g-6500 mcores (x3)",
-            "appD-c6g-6500 mcores (x7)",
-            "appD-c6g-6500 mcores (x7)",
+            "appD-c6g_m6g_r6g-6500 mcores (x1)",
+            "appD-c6g_m6g_r6g-6500 mcores (x1)",
+            "appD-c6g_m6g_r6g-6500 mcores (x3)",
+            "appD-c6g_m6g_r6g-6500 mcores (x7)",
+            "appD-c6g_m6g_r6g-6500 mcores (x7)",
             "19"
         ],
         ["appD", "appD", "appD", "appD", "appD", ""],
         [
-            "0.8 req / second (x1)",
-            "0.8 req / second (x1)",
-            "0.8 req / second (x3)",
-            "0.8 req / second (x7)",
-            "0.8 req / second (x7)",
-            "15.200 req / second"
+            "0.800 req/s (x1)",
+            "0.800 req/s (x1)",
+            "0.800 req/s (x3)",
+            "0.800 req/s (x7)",
+            "0.800 req/s (x7)",
+            "15.200 req/s"
         ]
     ]
 }
