@@ -205,8 +205,6 @@ def test_SolutionPrinter_is_infeasible(aws_eu_west_1, monkeypatch, capsys):
     monkeypatch.setattr(
         model.FcmaStatus, "pulp_to_fcma_status", lambda *_: model.FcmaStatus.INVALID
     )
-    # TODO: Fix bug to avoid mokeypatching get_worst_status too
-    monkeypatch.setattr(model.FcmaStatus, "get_worst_status", lambda *_: model.FcmaStatus.INVALID)
     problem = Fcma(system, workloads)
     solution = problem.solve()
 
