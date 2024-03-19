@@ -1,0 +1,69 @@
+{
+  "vms": {
+    "vms": [
+      {
+        "ic_name": "c6g.xlarge",
+        "total_num": 1,
+        "cost": 0.146
+      },
+      {
+        "ic_name": "c6g.2xlarge",
+        "total_num": 1,
+        "cost": 0.292
+      },
+      {
+        "ic_name": "c6g.large",
+        "total_num": 1,
+        "cost": 0.073
+      }
+    ],
+    "total_num": 3,
+    "total_cost": 0.5109999999999999
+  },
+  "apps": {
+    "appA": {
+      "app_name": "appA",
+      "container_groups": [
+        {
+          "container_name": "appA-c6g_m6g_r6g",
+          "vm_name": "c6g.xlarge[0]",
+          "app_name": "appA",
+          "performance": 0.16,
+          "replicas": 2,
+          "cores": 960.0
+        },
+        {
+          "container_name": "appA-c6g_m6g_r6g",
+          "vm_name": "c6g.2xlarge[0]",
+          "app_name": "appA",
+          "performance": 0.16,
+          "replicas": 4,
+          "cores": 960.0
+        },
+        {
+          "container_name": "appA-c6g_m6g_r6g",
+          "vm_name": "c6g.2xlarge[0]",
+          "app_name": "appA",
+          "performance": 0.02,
+          "replicas": 1,
+          "cores": 120.0
+        },
+        {
+          "container_name": "appA-c6g_m6g_r6g",
+          "vm_name": "c6g.large[0]",
+          "app_name": "appA",
+          "performance": 0.02,
+          "replicas": 1,
+          "cores": 120.0
+        }
+      ],
+      "total_replicas": 8,
+      "total_perf": 1.0
+    }
+  },
+  "units": {
+    "cost": "usd/h",
+    "perf": "req/s",
+    "cores": "mcores"
+  }
+}
