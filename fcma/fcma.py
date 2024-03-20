@@ -471,13 +471,13 @@ class Fcma:
         return fms_sol
 
     @staticmethod
-    def _get_fm_nodes_by_division(
+    def get_fm_nodes_by_division(
         best_fm_cores_apps: dict[InstanceClassFamily, any]
     ) -> dict[InstanceClassFamily, dict[InstanceClass, int]]:
         """
         Get the minimum number of nodes of each instance class for the best instance class families
         in terms of (req/s)/$. Algorithm is based on a sequence of integer divisions.
-        :best_fm_cores_apps: A dictionary with the number of cores and containers for each instance class family.
+        :param best_fm_cores_apps: A dictionary with the number of cores and containers for each instance class family.
         :return: The number of nodes of each instance class in each family.
         """
 
@@ -509,24 +509,30 @@ class Fcma:
 
         return n_nodes
 
-    def _get_fm_nodes_by_ilp(self) -> dict[InstanceClassFamily, dict[InstanceClass, int]]:
+    @staticmethod
+    def get_fm_nodes_by_ilp(
+        best_fm_cores_apps: dict[InstanceClassFamily, any], solver=None
+    ) -> tuple[dict[InstanceClassFamily, dict[InstanceClass, int]], FcmaStatus]:
         """
-        Returns the minimum number of nodes of each instance class for the best instance class families
+        Get the minimum number of nodes of each instance class for the best instance class families
         in terms of (req/s)/$. Algorithm is based on solving two simple ILP problems.
-        :return: The number of nodes of each instance class in each family.
+        :param best_fm_cores_apps: A dictionary with the number of cores and containers for each instance class family.
+        :param solver: PuLP solver. None for default solver.
+        :return: The number of nodes of each instance class in each family and the FCMA status.
         """
         # pylint: disable-msg=too-many-locals
 
         n_nodes = {}
         problem_status = [FcmaStatus.FEASIBLE]
 
-        for fm in self._best_fm_cores_apps:
+        for fm in best_fm_cores_apps:
             n_nodes[fm] = {}
             ics = fm.ics.copy()
-            # Remove instance classes with the same number of cores but a higher price
+            # Remove instance classes with the same number of cores but a higher price. Instance classes after
+            # the removal are sorted by increasing number of cores.
             cores = [ic.cores.magnitude for ic in ics]
             remove_ics_same_param_higher_price(ics, cores)
-            n_cores = int(ceil(self._best_fm_cores_apps[fm]["cores"].magnitude))
+            n_cores = int(ceil(best_fm_cores_apps[fm]["cores"].magnitude))
             # ILP problem variables
             n_vars = LpVariable.dicts(
                 name="N", indices=ics, cat=pulp.constants.LpInteger, lowBound=0
@@ -536,29 +542,31 @@ class Fcma:
             # instance classes hava an even number of cores, it is not possible to get an odd n_cores value.
             # Thus, firstly we need to calculate the minimum number of cores higher than or equal to n_cores
             # that may be obtained from the isntance classes in the family.
-            lp_problem1 = LpProblem(f"{str(fm)}_Calculate_minimum_cores", LpMinimize)
-            # - Objective: minimize cores, which is equivalent to minimize price in this approach
-            lp_problem1 += (
-                lpSum(n_vars[ic] * ic.cores.magnitude for ic in ics),
-                f"Minimize_the_number_of_cores_for_{str(fm)}",
-            )
-            # - Restrictions; enough cores
-            lp_problem1 += (
-                lpSum(n_vars[ic] * int(ic.cores.magnitude) for ic in ics) >= n_cores,
-                f"Number_of_cores_in_fm_{str(fm)}",
-            )
-            # - Solve
             min_cores = n_cores
-            try:
-                lp_problem1.solve(solver=self._solving_pars.solver, use_mps=False)
-            except PulpSolverError as _:
-                lp_problem1_status = FcmaStatus.INVALID
-            else:
-                # No exceptions
-                lp_problem1_status = FcmaStatus.pulp_to_fcma_status(
-                    lp_problem1.status, lp_problem1.sol_status
+            lp_problem1 = LpProblem(f"{str(fm)}_Calculate_minimum_cores", LpMinimize)
+            lp_problem1_status = FcmaStatus.FEASIBLE
+            if ics[0].cores > ComputationalUnits("1 core"):
+                # - Objective: minimize cores, which is equivalent to minimize price in this approach
+                lp_problem1 += (
+                    lpSum(n_vars[ic] * ic.cores.magnitude for ic in ics),
+                    f"Minimize_the_number_of_cores_for_{str(fm)}",
                 )
-                min_cores = round(sum(n_vars[ic].value() * ic.cores.magnitude for ic in ics))
+                # - Restrictions; enough cores
+                lp_problem1 += (
+                    lpSum(n_vars[ic] * int(ic.cores.magnitude) for ic in ics) >= n_cores,
+                    f"Number_of_cores_in_fm_{str(fm)}",
+                )
+                # - Solve
+                try:
+                    lp_problem1.solve(solver=solver, use_mps=False)
+                except PulpSolverError as _:
+                    lp_problem1_status = FcmaStatus.INVALID
+                else:
+                    # No exceptions
+                    lp_problem1_status = FcmaStatus.pulp_to_fcma_status(
+                        lp_problem1.status, lp_problem1.sol_status
+                    )
+                    min_cores = round(sum(n_vars[ic].value() * ic.cores.magnitude for ic in ics))
 
             # Second ILP problem. Now it is time to get the minimum number of nodes in the family adding up
             # min_cores
@@ -575,7 +583,7 @@ class Fcma:
                     f"Number_of_cores_in_fm_{str(fm)}",
                 )
                 try:
-                    lp_problem2.solve(solver=self._solving_pars.solver, use_mps=False)
+                    lp_problem2.solve(solver=solver, use_mps=False)
                 except PulpSolverError as _:
                     lp_problem2_status = FcmaStatus.INVALID
                 else:
@@ -597,10 +605,7 @@ class Fcma:
                 n_nodes[fm] = None
                 problem_status.append(lp_problem1_status)
 
-        # The solution is feasible at most
-        self._solving_stats.pre_allocation_status = FcmaStatus.get_worst_status(problem_status)
-
-        return n_nodes
+        return n_nodes, FcmaStatus.get_worst_status(problem_status)
 
     @staticmethod
     def _add_vms(
@@ -635,6 +640,15 @@ class Fcma:
         while replicas > 0:
             index = 0
             for ic in ics_in_fm:
+                # If this instance class and the following can not allocate containers
+                # use one node of the prevous instance class
+                if n_allocatable[index] == 0:
+                    new_vm = Vm(ics_in_fm[index - 1])
+                    new_vm.history.append("Added")
+                    replicas -= new_vm.allocate(cc, replicas)
+                    vms.append(new_vm)
+                    break
+
                 n_vms = replicas // n_allocatable[index]
                 if n_vms >= 1:
                     if index > 0 and replicas / n_allocatable[index] > 1:
@@ -686,6 +700,7 @@ class Fcma:
 
         # For every container class in the solution, cc, we must allocate n_containers
         for cc, n_containers in ccs:
+
             # Get the maximum number of containers in a vm to meet SFMPL application parameter
             max_containers_in_vm = int(floor(cc.app.sfmpl * self._workloads[cc.app] / cc.perf))
 
@@ -702,6 +717,7 @@ class Fcma:
             allocatable_no_max = []
             for vm in vms:
                 # Check if the maximum number of containers could be allocated
+                max_containers_in_vm = min(max_containers_in_vm, n_containers)
                 if vm.is_allocatable_cc(cc, max_containers_in_vm):
                     # Only allocate if it is possible to allocate the maximum number of containers
                     vm.allocate(cc, max_containers_in_vm)
@@ -828,9 +844,12 @@ class Fcma:
             if app not in fm_cores_apps[fm]["apps"]:
                 fm_cores_apps[fm]["apps"].append(app)
             fm_cores_apps[fm]["cores"] += cc.cores * n_replicas
-        fm_nodes = self._get_fm_nodes_by_division(fm_cores_apps)
+        fm_nodes = self.get_fm_nodes_by_division(fm_cores_apps)
         n_nodes_ccs = {"n_nodes": fm_nodes[fm], "ccs": replicas}
         vms = self._allocation_with_promotion_and_addition(n_nodes_ccs)
+
+        # Some nodes may remain empty after the promotiona and addition
+        vms = Fcma.remove_empty_nodes(vms)
 
         # Calculate the allocation cost
         cost = CurrencyPerTime("0 usd/hour")
@@ -853,9 +872,11 @@ class Fcma:
 
         # -------- Pre-allocation phase for speed levels 2 and 3
         if speed_level == 2:
-            fm_nodes = self._get_fm_nodes_by_ilp()
+            fm_nodes, self._solving_stats.pre_allocation_status = self.get_fm_nodes_by_ilp(
+                self._best_fm_cores_apps, self._solving_pars.solver
+            )
         else:  # Speed level 3
-            fm_nodes = Fcma._get_fm_nodes_by_division(self._best_fm_cores_apps)
+            fm_nodes = Fcma.get_fm_nodes_by_division(self._best_fm_cores_apps)
             # The solution is always feasible forsince division algorithm may not be optimal
             self._solving_stats.pre_allocation_status = FcmaStatus.FEASIBLE
         for fm in self._best_fm_cores_apps:
@@ -954,6 +975,14 @@ class Fcma:
                     # Append the virtual machines coming from the addition alternative
                     self._vms[fm].extend(added_vms)
 
+    @staticmethod
+    def remove_empty_nodes(vms: list[Vm]) -> list[Vm]:
+        """
+        Remove empty nodes, i.e, those without alllocated containers.
+        :return: A list with non-empty nodes.
+        """
+        return list(filter(lambda vm: len(vm.cgs) > 0, vms))
+
     def solve(self, solving_pars: SolvingPars = None) -> Solution:
         """
         Solve the container to node allocation problem using FCMA algorithm.
@@ -1005,6 +1034,9 @@ class Fcma:
             for fm, sol in fms_sol.items():
 
                 self._vms[fm] = self._allocation_with_promotion_and_addition(sol)
+
+                # Some nodes may remain empty after the promotiona and addition
+                self._vms[fm] = Fcma.remove_empty_nodes(self._vms[fm])
 
                 # Until now promotion was prefered to node addition, because aggregating CPU and memory
                 # capacities makes future allocations easier. However, when the promotion is the last
