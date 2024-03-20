@@ -1,5 +1,18 @@
 """
-Some tests based on the example provided in examples folder
+The tests are parametrized, so a few functions perform a lot of tests. The parameters are
+the example to run and the speed_level to compute the solution.
+
+Since the parameter value ends up as part of the test name, it is possible to use -k to
+run only a specific set of tests. For example:
+
+    # Run all tests for example1, at all speed levels
+    pytest -v -k example1
+
+    # Run all tests for speed_level 2, for all examples
+    pytest -v -k "-2"
+
+    # Run all tests for example4 at speed level 3
+    pytest -v -k example4-3
 """
 
 from itertools import product
@@ -144,13 +157,13 @@ def test_bad_problem_is_rejected(aws_eu_west_1):
 
 
 @pytest.mark.parametrize("example_data", examples, indirect=["example_data"])
-def test_example1_data_creation(example_data):
+def test_example_data_creation(example_data):
     # Check the data
     assert example_data is not None
 
 
 @pytest.mark.parametrize("example_solving_pars", speeds, indirect=["example_solving_pars"])
-def test_example1_solving_config(example_solving_pars):
+def test_example_solving_config(example_solving_pars):
     # Check the solving configuration
     speed, config = example_solving_pars
     assert config is not None
@@ -228,7 +241,7 @@ def test_SolutionPrinter_is_infeasible(aws_eu_west_1, monkeypatch, capsys):
     ],
     indirect=["example_data", "example_solving_pars", "example1_expected_vms_SolutionPrinter"],
 )
-def test_example1_solution_printer_vms_and_prices(
+def test_example_solution_printer_vms_and_prices(
     example_solution, example1_expected_vms_SolutionPrinter
 ):
     *_, solution = example_solution
@@ -256,7 +269,7 @@ def test_example1_solution_printer_vms_and_prices(
         "example1_expected_allocation_SolutionPrinter",
     ],
 )
-def test_example1_solution_printer_apps_allocations(
+def test_example_solution_printer_apps_allocations(
     example_solution, example1_expected_allocation_SolutionPrinter
 ):
     fcma_problem, _, solution = example_solution
@@ -346,7 +359,7 @@ def test_SolutionSummary_as_dict_and_back(example_solution):
     cases_with_solutions,
     indirect=["example_data", "example_solving_pars", "expected_solution_summary"],
 )
-def test_example1_SolutionSummary_vms(example_solution, expected_solution_summary):
+def test_example_SolutionSummary_vms(example_solution, expected_solution_summary):
     *_, solution = example_solution
     summary = SolutionSummary(solution)
     vm_alloc = summary.get_vm_summary()
@@ -359,7 +372,7 @@ def test_example1_SolutionSummary_vms(example_solution, expected_solution_summar
     cases_with_solutions,
     indirect=["example_data", "example_solving_pars", "expected_solution_summary"],
 )
-def test_example1_SolutionSummary_all_apps(example_solution, expected_solution_summary):
+def test_example_SolutionSummary_all_apps(example_solution, expected_solution_summary):
     *_, solution = example_solution
     summary = SolutionSummary(solution)
     app_alloc = summary.get_all_apps_allocations()
@@ -373,7 +386,7 @@ def test_example1_SolutionSummary_all_apps(example_solution, expected_solution_s
     cases_with_solutions[:2],
     indirect=["example_data", "example_solving_pars", "expected_solution_summary"],
 )
-def test_example1_SolutionSummary_single_app(example_solution, expected_solution_summary):
+def test_example_SolutionSummary_single_app(example_solution, expected_solution_summary):
     *_, solution = example_solution
     summary = SolutionSummary(solution)
     expected_allocation = expected_solution_summary.get_all_apps_allocations()
