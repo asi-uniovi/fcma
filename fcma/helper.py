@@ -173,8 +173,8 @@ def get_fm_aggregation_pars(
         for ic in inter_ic:
             cores_relation = (ic.cores // small_ic.cores).magnitude
             if cores_relation * small_ic.cores == ic.cores:
-                return cores_relation - 1
-        return (large_ic.cores // small_ic.cores).magnitude
+                return int(cores_relation - 1)
+        return int((large_ic.cores // small_ic.cores).magnitude)
 
     def _get_aggregations_for(large_ic: InstanceClass, small_ics: tuple[InstanceClass, ...]):
         """
