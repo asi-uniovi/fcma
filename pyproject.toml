@@ -29,7 +29,5 @@ line-length=100
 [tool.pytest.ini_options]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "velocity1",
-    "velocity2",
-    "velocity3"
+    "smoke: simple test that check that nothing blows up",
 ]
