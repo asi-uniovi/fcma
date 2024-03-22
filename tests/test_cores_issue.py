@@ -6,7 +6,7 @@ in the solver."""
 
 import pytest
 from fcma import SolutionSummary, SolvingPars
-from .utils_test import assert_dicts_almost_equal
+from .util_asserts import assert_dicts_almost_equal
 
 
 @pytest.mark.slow
