@@ -1,0 +1,1228 @@
+{
+  "vms": {
+    "vms": [
+      {
+        "ic_name": "c5.24xlarge",
+        "total_num": 23,
+        "cost": 105.98400000000007
+      },
+      {
+        "ic_name": "c7a.48xlarge",
+        "total_num": 4,
+        "cost": 42.28608
+      },
+      {
+        "ic_name": "c6g.24xlarge",
+        "total_num": 22,
+        "cost": 77.08799999999998
+      },
+      {
+        "ic_name": "m6i.12xlarge",
+        "total_num": 2,
+        "cost": 5.136
+      },
+      {
+        "ic_name": "c6i.32xlarge",
+        "total_num": 15,
+        "cost": 87.55199999999998
+      },
+      {
+        "ic_name": "c6i.18xlarge",
+        "total_num": 1,
+        "cost": 3.2832
+      },
+      {
+        "ic_name": "m6i.2xlarge",
+        "total_num": 1,
+        "cost": 0.428
+      }
+    ],
+    "total_num": 68,
+    "total_cost": 321.75727999999975
+  },
+  "apps": {
+    "app_27": {
+      "app_name": "app_27",
+      "container_groups": [
+        {
+          "container_name": "app_27-c5_m5_r5",
+          "vm_name": "c5.24xlarge[22]",
+          "app_name": "app_27",
+          "performance": 0.01935780821917808,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_27-c5_m5_r5",
+          "vm_name": "c5.24xlarge[0]",
+          "app_name": "app_27",
+          "performance": 0.01935780821917808,
+          "replicas": 1,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_27-c5_m5_r5",
+          "vm_name": "c5.24xlarge[1]",
+          "app_name": "app_27",
+          "performance": 0.01935780821917808,
+          "replicas": 3,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_27-c5_m5_r5",
+          "vm_name": "c5.24xlarge[2]",
+          "app_name": "app_27",
+          "performance": 0.00967890410958904,
+          "replicas": 1,
+          "cores": 3402.7397260273974
+        },
+        {
+          "container_name": "app_27-c5_m5_r5",
+          "vm_name": "c5.24xlarge[3]",
+          "app_name": "app_27",
+          "performance": 0.00967890410958904,
+          "replicas": 1,
+          "cores": 3402.7397260273974
+        },
+        {
+          "container_name": "app_27-c5_m5_r5",
+          "vm_name": "c5.24xlarge[4]",
+          "app_name": "app_27",
+          "performance": 0.01935780821917808,
+          "replicas": 2,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_27-c5_m5_r5",
+          "vm_name": "c5.24xlarge[6]",
+          "app_name": "app_27",
+          "performance": 0.01935780821917808,
+          "replicas": 4,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_27-c5_m5_r5",
+          "vm_name": "c5.24xlarge[14]",
+          "app_name": "app_27",
+          "performance": 0.01935780821917808,
+          "replicas": 6,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_27-c5_m5_r5",
+          "vm_name": "c5.24xlarge[18]",
+          "app_name": "app_27",
+          "performance": 0.01935780821917808,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_27-c5_m5_r5",
+          "vm_name": "c5.24xlarge[19]",
+          "app_name": "app_27",
+          "performance": 0.01935780821917808,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_27-c5_m5_r5",
+          "vm_name": "c5.24xlarge[20]",
+          "app_name": "app_27",
+          "performance": 0.01935780821917808,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_27-c5_m5_r5",
+          "vm_name": "c5.24xlarge[21]",
+          "app_name": "app_27",
+          "performance": 0.01935780821917808,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        }
+      ],
+      "total_replicas": 53,
+      "total_perf": 1.0066060273972601
+    },
+    "app_0": {
+      "app_name": "app_0",
+      "container_groups": [
+        {
+          "container_name": "app_0-c5_m5_r5",
+          "vm_name": "c5.24xlarge[0]",
+          "app_name": "app_0",
+          "performance": 0.24197260273972604,
+          "replicas": 3,
+          "cores": 10888.76712328767
+        },
+        {
+          "container_name": "app_0-c5_m5_r5",
+          "vm_name": "c5.24xlarge[1]",
+          "app_name": "app_0",
+          "performance": 0.24197260273972604,
+          "replicas": 1,
+          "cores": 10888.76712328767
+        },
+        {
+          "container_name": "app_0-c5_m5_r5",
+          "vm_name": "c5.24xlarge[1]",
+          "app_name": "app_0",
+          "performance": 0.12098630136986302,
+          "replicas": 1,
+          "cores": 5444.383561643835
+        }
+      ],
+      "total_replicas": 5,
+      "total_perf": 1.0888767123287673
+    },
+    "app_1": {
+      "app_name": "app_1",
+      "container_groups": [
+        {
+          "container_name": "app_1-c5_m5_r5",
+          "vm_name": "c5.24xlarge[2]",
+          "app_name": "app_1",
+          "performance": 0.24197260273972604,
+          "replicas": 4,
+          "cores": 10888.76712328767
+        },
+        {
+          "container_name": "app_1-c5_m5_r5",
+          "vm_name": "c5.24xlarge[3]",
+          "app_name": "app_1",
+          "performance": 0.12098630136986302,
+          "replicas": 1,
+          "cores": 5444.383561643835
+        }
+      ],
+      "total_replicas": 5,
+      "total_perf": 1.0888767123287673
+    },
+    "app_19": {
+      "app_name": "app_19",
+      "container_groups": [
+        {
+          "container_name": "app_19-c5_m5_r5",
+          "vm_name": "c5.24xlarge[3]",
+          "app_name": "app_19",
+          "performance": 0.24197260273972604,
+          "replicas": 4,
+          "cores": 9073.972602739726
+        },
+        {
+          "container_name": "app_19-c5_m5_r5",
+          "vm_name": "c5.24xlarge[4]",
+          "app_name": "app_19",
+          "performance": 0.12098630136986302,
+          "replicas": 1,
+          "cores": 4536.986301369863
+        }
+      ],
+      "total_replicas": 5,
+      "total_perf": 1.0888767123287673
+    },
+    "app_3": {
+      "app_name": "app_3",
+      "container_groups": [
+        {
+          "container_name": "app_3-c5_m5_r5",
+          "vm_name": "c5.24xlarge[4]",
+          "app_name": "app_3",
+          "performance": 0.24197260273972604,
+          "replicas": 4,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_3-c5_m5_r5",
+          "vm_name": "c5.24xlarge[6]",
+          "app_name": "app_3",
+          "performance": 0.12098630136986302,
+          "replicas": 1,
+          "cores": 3402.7397260273974
+        }
+      ],
+      "total_replicas": 5,
+      "total_perf": 1.0888767123287673
+    },
+    "app_2": {
+      "app_name": "app_2",
+      "container_groups": [
+        {
+          "container_name": "app_2-c5_m5_r5",
+          "vm_name": "c5.24xlarge[5]",
+          "app_name": "app_2",
+          "performance": 0.12703561643835617,
+          "replicas": 6,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_2-c5_m5_r5",
+          "vm_name": "c5.24xlarge[6]",
+          "app_name": "app_2",
+          "performance": 0.12703561643835617,
+          "replicas": 2,
+          "cores": 6805.479452054795
+        }
+      ],
+      "total_replicas": 8,
+      "total_perf": 1.0162849315068494
+    },
+    "app_6": {
+      "app_name": "app_6",
+      "container_groups": [
+        {
+          "container_name": "app_6-c5_m5_r5",
+          "vm_name": "c5.24xlarge[7]",
+          "app_name": "app_6",
+          "performance": 0.024197260273972603,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_6-c5_m5_r5",
+          "vm_name": "c5.24xlarge[8]",
+          "app_name": "app_6",
+          "performance": 0.024197260273972603,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_6-c5_m5_r5",
+          "vm_name": "c5.24xlarge[9]",
+          "app_name": "app_6",
+          "performance": 0.024197260273972603,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_6-c5_m5_r5",
+          "vm_name": "c5.24xlarge[10]",
+          "app_name": "app_6",
+          "performance": 0.024197260273972603,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_6-c5_m5_r5",
+          "vm_name": "c5.24xlarge[11]",
+          "app_name": "app_6",
+          "performance": 0.024197260273972603,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_6-c5_m5_r5",
+          "vm_name": "c5.24xlarge[12]",
+          "app_name": "app_6",
+          "performance": 0.024197260273972603,
+          "replicas": 6,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_6-c5_m5_r5",
+          "vm_name": "c5.24xlarge[12]",
+          "app_name": "app_6",
+          "performance": 0.012098630136986302,
+          "replicas": 1,
+          "cores": 3402.7397260273974
+        }
+      ],
+      "total_replicas": 42,
+      "total_perf": 1.004186301369863
+    },
+    "app_18": {
+      "app_name": "app_18",
+      "container_groups": [
+        {
+          "container_name": "app_18-c5_m5_r5",
+          "vm_name": "c5.24xlarge[13]",
+          "app_name": "app_18",
+          "performance": 0.12703561643835617,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_18-c5_m5_r5",
+          "vm_name": "c5.24xlarge[14]",
+          "app_name": "app_18",
+          "performance": 0.12703561643835617,
+          "replicas": 1,
+          "cores": 6805.479452054795
+        }
+      ],
+      "total_replicas": 8,
+      "total_perf": 1.0162849315068494
+    },
+    "app_22": {
+      "app_name": "app_22",
+      "container_groups": [
+        {
+          "container_name": "app_22-c5_m5_r5",
+          "vm_name": "c5.24xlarge[15]",
+          "app_name": "app_22",
+          "performance": 0.048394520547945206,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_22-c5_m5_r5",
+          "vm_name": "c5.24xlarge[16]",
+          "app_name": "app_22",
+          "performance": 0.048394520547945206,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        },
+        {
+          "container_name": "app_22-c5_m5_r5",
+          "vm_name": "c5.24xlarge[17]",
+          "app_name": "app_22",
+          "performance": 0.048394520547945206,
+          "replicas": 7,
+          "cores": 6805.479452054795
+        }
+      ],
+      "total_replicas": 21,
+      "total_perf": 1.0162849315068494
+    },
+    "app_4": {
+      "app_name": "app_4",
+      "container_groups": [
+        {
+          "container_name": "app_4-c7a_m7a_r7a",
+          "vm_name": "c7a.48xlarge[3]",
+          "app_name": "app_4",
+          "performance": 0.07964843835616439,
+          "replicas": 9,
+          "cores": 8145.86301369863
+        },
+        {
+          "container_name": "app_4-c7a_m7a_r7a",
+          "vm_name": "c7a.48xlarge[0]",
+          "app_name": "app_4",
+          "performance": 0.07964843835616439,
+          "replicas": 1,
+          "cores": 8145.86301369863
+        },
+        {
+          "container_name": "app_4-c7a_m7a_r7a",
+          "vm_name": "c7a.48xlarge[1]",
+          "app_name": "app_4",
+          "performance": 0.07964843835616439,
+          "replicas": 3,
+          "cores": 8145.86301369863
+        }
+      ],
+      "total_replicas": 13,
+      "total_perf": 1.0354296986301372
+    },
+    "app_17": {
+      "app_name": "app_17",
+      "container_groups": [
+        {
+          "container_name": "app_17-c7a_m7a_r7a",
+          "vm_name": "c7a.48xlarge[0]",
+          "app_name": "app_17",
+          "performance": 0.28963068493150684,
+          "replicas": 3,
+          "cores": 13033.380821917806
+        },
+        {
+          "container_name": "app_17-c7a_m7a_r7a",
+          "vm_name": "c7a.48xlarge[1]",
+          "app_name": "app_17",
+          "performance": 0.14481534246575342,
+          "replicas": 1,
+          "cores": 6516.690410958903
+        }
+      ],
+      "total_replicas": 4,
+      "total_perf": 1.013707397260274
+    },
+    "app_21": {
+      "app_name": "app_21",
+      "container_groups": [
+        {
+          "container_name": "app_21-c7a_m7a_r7a",
+          "vm_name": "c7a.48xlarge[0]",
+          "app_name": "app_21",
+          "performance": 0.28963068493150684,
+          "replicas": 3,
+          "cores": 13033.380821917806
+        },
+        {
+          "container_name": "app_21-c7a_m7a_r7a",
+          "vm_name": "c7a.48xlarge[1]",
+          "app_name": "app_21",
+          "performance": 0.14481534246575342,
+          "replicas": 1,
+          "cores": 6516.690410958903
+        }
+      ],
+      "total_replicas": 4,
+      "total_perf": 1.013707397260274
+    },
+    "app_28": {
+      "app_name": "app_28",
+      "container_groups": [
+        {
+          "container_name": "app_28-c7a_m7a_r7a",
+          "vm_name": "c7a.48xlarge[1]",
+          "app_name": "app_28",
+          "performance": 0.28963068493150684,
+          "replicas": 3,
+          "cores": 10861.150684931506
+        },
+        {
+          "container_name": "app_28-c7a_m7a_r7a",
+          "vm_name": "c7a.48xlarge[2]",
+          "app_name": "app_28",
+          "performance": 0.14481534246575342,
+          "replicas": 1,
+          "cores": 5430.575342465753
+        }
+      ],
+      "total_replicas": 4,
+      "total_perf": 1.013707397260274
+    },
+    "app_26": {
+      "app_name": "app_26",
+      "container_groups": [
+        {
+          "container_name": "app_26-c7a_m7a_r7a",
+          "vm_name": "c7a.48xlarge[1]",
+          "app_name": "app_26",
+          "performance": 0.07602805479452054,
+          "replicas": 1,
+          "cores": 4887.517808219178
+        },
+        {
+          "container_name": "app_26-c7a_m7a_r7a",
+          "vm_name": "c7a.48xlarge[2]",
+          "app_name": "app_26",
+          "performance": 0.1520561095890411,
+          "replicas": 6,
+          "cores": 9775.035616438356
+        },
+        {
+          "container_name": "app_26-c7a_m7a_r7a",
+          "vm_name": "c7a.48xlarge[2]",
+          "app_name": "app_26",
+          "performance": 0.07602805479452054,
+          "replicas": 1,
+          "cores": 4887.517808219178
+        }
+      ],
+      "total_replicas": 8,
+      "total_perf": 1.0643927671232878
+    },
+    "app_13": {
+      "app_name": "app_13",
+      "container_groups": [
+        {
+          "container_name": "app_13-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[18]",
+          "app_name": "app_13",
+          "performance": 0.033,
+          "replicas": 5,
+          "cores": 4500.0
+        },
+        {
+          "container_name": "app_13-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[18]",
+          "app_name": "app_13",
+          "performance": 0.0165,
+          "replicas": 1,
+          "cores": 2250.0
+        },
+        {
+          "container_name": "app_13-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[10]",
+          "app_name": "app_13",
+          "performance": 0.033,
+          "replicas": 8,
+          "cores": 4500.0
+        },
+        {
+          "container_name": "app_13-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[14]",
+          "app_name": "app_13",
+          "performance": 0.033,
+          "replicas": 8,
+          "cores": 4500.0
+        },
+        {
+          "container_name": "app_13-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[17]",
+          "app_name": "app_13",
+          "performance": 0.033,
+          "replicas": 9,
+          "cores": 4500.0
+        }
+      ],
+      "total_replicas": 31,
+      "total_perf": 1.0065000000000002
+    },
+    "app_9": {
+      "app_name": "app_9",
+      "container_groups": [
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[18]",
+          "app_name": "app_9",
+          "performance": 0.024,
+          "replicas": 4,
+          "cores": 4050.000000000001
+        },
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[19]",
+          "app_name": "app_9",
+          "performance": 0.024,
+          "replicas": 11,
+          "cores": 4050.000000000001
+        },
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[19]",
+          "app_name": "app_9",
+          "performance": 0.012,
+          "replicas": 1,
+          "cores": 2025.0000000000005
+        },
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[20]",
+          "app_name": "app_9",
+          "performance": 0.024,
+          "replicas": 11,
+          "cores": 4050.000000000001
+        },
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[20]",
+          "app_name": "app_9",
+          "performance": 0.012,
+          "replicas": 1,
+          "cores": 2025.0000000000005
+        },
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[0]",
+          "app_name": "app_9",
+          "performance": 0.012,
+          "replicas": 1,
+          "cores": 2025.0000000000005
+        },
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[1]",
+          "app_name": "app_9",
+          "performance": 0.012,
+          "replicas": 1,
+          "cores": 2025.0000000000005
+        },
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[2]",
+          "app_name": "app_9",
+          "performance": 0.012,
+          "replicas": 1,
+          "cores": 2025.0000000000005
+        },
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[3]",
+          "app_name": "app_9",
+          "performance": 0.024,
+          "replicas": 5,
+          "cores": 4050.000000000001
+        },
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[8]",
+          "app_name": "app_9",
+          "performance": 0.024,
+          "replicas": 4,
+          "cores": 4050.000000000001
+        },
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[9]",
+          "app_name": "app_9",
+          "performance": 0.024,
+          "replicas": 1,
+          "cores": 4050.000000000001
+        },
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[16]",
+          "app_name": "app_9",
+          "performance": 0.024,
+          "replicas": 3,
+          "cores": 4050.000000000001
+        },
+        {
+          "container_name": "app_9-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[21]",
+          "app_name": "app_9",
+          "performance": 0.012,
+          "replicas": 1,
+          "cores": 2025.0000000000005
+        }
+      ],
+      "total_replicas": 45,
+      "total_perf": 1.0079999999999998
+    },
+    "app_20": {
+      "app_name": "app_20",
+      "container_groups": [
+        {
+          "container_name": "app_20-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[0]",
+          "app_name": "app_20",
+          "performance": 0.033,
+          "replicas": 8,
+          "cores": 5399.999999999999
+        },
+        {
+          "container_name": "app_20-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[0]",
+          "app_name": "app_20",
+          "performance": 0.0165,
+          "replicas": 1,
+          "cores": 2699.9999999999995
+        },
+        {
+          "container_name": "app_20-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[1]",
+          "app_name": "app_20",
+          "performance": 0.033,
+          "replicas": 8,
+          "cores": 5399.999999999999
+        },
+        {
+          "container_name": "app_20-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[1]",
+          "app_name": "app_20",
+          "performance": 0.0165,
+          "replicas": 1,
+          "cores": 2699.9999999999995
+        },
+        {
+          "container_name": "app_20-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[2]",
+          "app_name": "app_20",
+          "performance": 0.033,
+          "replicas": 8,
+          "cores": 5399.999999999999
+        },
+        {
+          "container_name": "app_20-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[2]",
+          "app_name": "app_20",
+          "performance": 0.0165,
+          "replicas": 1,
+          "cores": 2699.9999999999995
+        },
+        {
+          "container_name": "app_20-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[3]",
+          "app_name": "app_20",
+          "performance": 0.033,
+          "replicas": 5,
+          "cores": 5399.999999999999
+        }
+      ],
+      "total_replicas": 32,
+      "total_perf": 1.0065000000000002
+    },
+    "app_24": {
+      "app_name": "app_24",
+      "container_groups": [
+        {
+          "container_name": "app_24-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[4]",
+          "app_name": "app_24",
+          "performance": 0.024,
+          "replicas": 9,
+          "cores": 5175.0
+        },
+        {
+          "container_name": "app_24-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[5]",
+          "app_name": "app_24",
+          "performance": 0.024,
+          "replicas": 9,
+          "cores": 5175.0
+        },
+        {
+          "container_name": "app_24-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[6]",
+          "app_name": "app_24",
+          "performance": 0.024,
+          "replicas": 9,
+          "cores": 5175.0
+        },
+        {
+          "container_name": "app_24-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[7]",
+          "app_name": "app_24",
+          "performance": 0.024,
+          "replicas": 9,
+          "cores": 5175.0
+        },
+        {
+          "container_name": "app_24-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[8]",
+          "app_name": "app_24",
+          "performance": 0.024,
+          "replicas": 6,
+          "cores": 5175.0
+        }
+      ],
+      "total_replicas": 42,
+      "total_perf": 1.008
+    },
+    "app_5": {
+      "app_name": "app_5",
+      "container_groups": [
+        {
+          "container_name": "app_5-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[9]",
+          "app_name": "app_5",
+          "performance": 0.12,
+          "replicas": 8,
+          "cores": 4500.0
+        },
+        {
+          "container_name": "app_5-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[10]",
+          "app_name": "app_5",
+          "performance": 0.06,
+          "replicas": 1,
+          "cores": 2250.0
+        }
+      ],
+      "total_replicas": 9,
+      "total_perf": 1.02
+    },
+    "app_7": {
+      "app_name": "app_7",
+      "container_groups": [
+        {
+          "container_name": "app_7-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[11]",
+          "app_name": "app_7",
+          "performance": 0.033,
+          "replicas": 10,
+          "cores": 4500.0
+        },
+        {
+          "container_name": "app_7-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[12]",
+          "app_name": "app_7",
+          "performance": 0.033,
+          "replicas": 10,
+          "cores": 4500.0
+        },
+        {
+          "container_name": "app_7-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[13]",
+          "app_name": "app_7",
+          "performance": 0.033,
+          "replicas": 10,
+          "cores": 4500.0
+        },
+        {
+          "container_name": "app_7-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[14]",
+          "app_name": "app_7",
+          "performance": 0.0165,
+          "replicas": 1,
+          "cores": 2250.0
+        }
+      ],
+      "total_replicas": 31,
+      "total_perf": 1.0065
+    },
+    "app_10": {
+      "app_name": "app_10",
+      "container_groups": [
+        {
+          "container_name": "app_10-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[15]",
+          "app_name": "app_10",
+          "performance": 0.063,
+          "replicas": 9,
+          "cores": 4500.0
+        },
+        {
+          "container_name": "app_10-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[16]",
+          "app_name": "app_10",
+          "performance": 0.063,
+          "replicas": 7,
+          "cores": 4500.0
+        }
+      ],
+      "total_replicas": 16,
+      "total_perf": 1.008
+    },
+    "app_12": {
+      "app_name": "app_12",
+      "container_groups": [
+        {
+          "container_name": "app_12-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[21]",
+          "app_name": "app_12",
+          "performance": 0.12,
+          "replicas": 8,
+          "cores": 4050.000000000001
+        },
+        {
+          "container_name": "app_12-c6g_m6g_r6g",
+          "vm_name": "c6g.24xlarge[21]",
+          "app_name": "app_12",
+          "performance": 0.06,
+          "replicas": 1,
+          "cores": 2025.0000000000005
+        }
+      ],
+      "total_replicas": 9,
+      "total_perf": 1.02
+    },
+    "app_16": {
+      "app_name": "app_16",
+      "container_groups": [
+        {
+          "container_name": "app_16-c6i_m6i_r6i",
+          "vm_name": "m6i.12xlarge[1]",
+          "app_name": "app_16",
+          "performance": 0.12068383561643839,
+          "replicas": 3,
+          "cores": 6465.205479452056
+        },
+        {
+          "container_name": "app_16-c6i_m6i_r6i",
+          "vm_name": "m6i.12xlarge[1]",
+          "app_name": "app_16",
+          "performance": 0.060341917808219195,
+          "replicas": 1,
+          "cores": 3232.602739726028
+        },
+        {
+          "container_name": "app_16-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[14]",
+          "app_name": "app_16",
+          "performance": 0.12068383561643839,
+          "replicas": 1,
+          "cores": 6465.205479452056
+        },
+        {
+          "container_name": "app_16-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[14]",
+          "app_name": "app_16",
+          "performance": 0.060341917808219195,
+          "replicas": 1,
+          "cores": 3232.602739726028
+        },
+        {
+          "container_name": "app_16-c6i_m6i_r6i",
+          "vm_name": "m6i.12xlarge[0]",
+          "app_name": "app_16",
+          "performance": 0.060341917808219195,
+          "replicas": 1,
+          "cores": 3232.602739726028
+        },
+        {
+          "container_name": "app_16-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[4]",
+          "app_name": "app_16",
+          "performance": 0.12068383561643839,
+          "replicas": 1,
+          "cores": 6465.205479452056
+        },
+        {
+          "container_name": "app_16-c6i_m6i_r6i",
+          "vm_name": "c6i.18xlarge[2]",
+          "app_name": "app_16",
+          "performance": 0.12068383561643839,
+          "replicas": 2,
+          "cores": 6465.205479452056
+        }
+      ],
+      "total_replicas": 10,
+      "total_perf": 1.0258126027397263
+    },
+    "app_25": {
+      "app_name": "app_25",
+      "container_groups": [
+        {
+          "container_name": "app_25-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[14]",
+          "app_name": "app_25",
+          "performance": 0.060341917808219195,
+          "replicas": 1,
+          "cores": 3879.123287671234
+        },
+        {
+          "container_name": "app_25-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[7]",
+          "app_name": "app_25",
+          "performance": 0.12068383561643839,
+          "replicas": 4,
+          "cores": 7758.246575342468
+        },
+        {
+          "container_name": "app_25-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[13]",
+          "app_name": "app_25",
+          "performance": 0.12068383561643839,
+          "replicas": 4,
+          "cores": 7758.246575342468
+        }
+      ],
+      "total_replicas": 9,
+      "total_perf": 1.0258126027397263
+    },
+    "app_15": {
+      "app_name": "app_15",
+      "container_groups": [
+        {
+          "container_name": "app_15-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[14]",
+          "app_name": "app_15",
+          "performance": 0.22987397260273976,
+          "replicas": 1,
+          "cores": 6465.205479452056
+        },
+        {
+          "container_name": "app_15-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[14]",
+          "app_name": "app_15",
+          "performance": 0.11493698630136988,
+          "replicas": 1,
+          "cores": 3232.602739726028
+        },
+        {
+          "container_name": "app_15-c6i_m6i_r6i",
+          "vm_name": "m6i.12xlarge[0]",
+          "app_name": "app_15",
+          "performance": 0.22987397260273976,
+          "replicas": 3,
+          "cores": 6465.205479452056
+        }
+      ],
+      "total_replicas": 5,
+      "total_perf": 1.034432876712329
+    },
+    "app_29": {
+      "app_name": "app_29",
+      "container_groups": [
+        {
+          "container_name": "app_29-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[14]",
+          "app_name": "app_29",
+          "performance": 0.12068383561643839,
+          "replicas": 4,
+          "cores": 6465.205479452056
+        },
+        {
+          "container_name": "app_29-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[14]",
+          "app_name": "app_29",
+          "performance": 0.060341917808219195,
+          "replicas": 1,
+          "cores": 3232.602739726028
+        },
+        {
+          "container_name": "app_29-c6i_m6i_r6i",
+          "vm_name": "c6i.18xlarge[2]",
+          "app_name": "app_29",
+          "performance": 0.12068383561643839,
+          "replicas": 3,
+          "cores": 6465.205479452056
+        },
+        {
+          "container_name": "app_29-c6i_m6i_r6i",
+          "vm_name": "c6i.18xlarge[2]",
+          "app_name": "app_29",
+          "performance": 0.060341917808219195,
+          "replicas": 1,
+          "cores": 3232.602739726028
+        },
+        {
+          "container_name": "app_29-c6i_m6i_r6i",
+          "vm_name": "m6i.2xlarge[1]",
+          "app_name": "app_29",
+          "performance": 0.060341917808219195,
+          "replicas": 1,
+          "cores": 3232.602739726028
+        }
+      ],
+      "total_replicas": 10,
+      "total_perf": 1.0258126027397263
+    },
+    "app_23": {
+      "app_name": "app_23",
+      "container_groups": [
+        {
+          "container_name": "app_23-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[0]",
+          "app_name": "app_23",
+          "performance": 0.04597479452054795,
+          "replicas": 5,
+          "cores": 9913.315068493152
+        },
+        {
+          "container_name": "app_23-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[1]",
+          "app_name": "app_23",
+          "performance": 0.04597479452054795,
+          "replicas": 5,
+          "cores": 9913.315068493152
+        },
+        {
+          "container_name": "app_23-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[2]",
+          "app_name": "app_23",
+          "performance": 0.04597479452054795,
+          "replicas": 5,
+          "cores": 9913.315068493152
+        },
+        {
+          "container_name": "app_23-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[3]",
+          "app_name": "app_23",
+          "performance": 0.04597479452054795,
+          "replicas": 5,
+          "cores": 9913.315068493152
+        },
+        {
+          "container_name": "app_23-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[4]",
+          "app_name": "app_23",
+          "performance": 0.04597479452054795,
+          "replicas": 2,
+          "cores": 9913.315068493152
+        }
+      ],
+      "total_replicas": 22,
+      "total_perf": 1.0114454794520549
+    },
+    "app_11": {
+      "app_name": "app_11",
+      "container_groups": [
+        {
+          "container_name": "app_11-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[4]",
+          "app_name": "app_11",
+          "performance": 0.22987397260273976,
+          "replicas": 4,
+          "cores": 7758.246575342468
+        },
+        {
+          "container_name": "app_11-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[7]",
+          "app_name": "app_11",
+          "performance": 0.11493698630136988,
+          "replicas": 1,
+          "cores": 3879.123287671234
+        }
+      ],
+      "total_replicas": 5,
+      "total_perf": 1.034432876712329
+    },
+    "app_14": {
+      "app_name": "app_14",
+      "container_groups": [
+        {
+          "container_name": "app_14-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[5]",
+          "app_name": "app_14",
+          "performance": 0.06321534246575344,
+          "replicas": 7,
+          "cores": 8620.273972602741
+        },
+        {
+          "container_name": "app_14-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[6]",
+          "app_name": "app_14",
+          "performance": 0.06321534246575344,
+          "replicas": 7,
+          "cores": 8620.273972602741
+        },
+        {
+          "container_name": "app_14-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[7]",
+          "app_name": "app_14",
+          "performance": 0.06321534246575344,
+          "replicas": 2,
+          "cores": 8620.273972602741
+        }
+      ],
+      "total_replicas": 16,
+      "total_perf": 1.011445479452055
+    },
+    "app_8": {
+      "app_name": "app_8",
+      "container_groups": [
+        {
+          "container_name": "app_8-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[8]",
+          "app_name": "app_8",
+          "performance": 0.022987397260273976,
+          "replicas": 8,
+          "cores": 7758.246575342468
+        },
+        {
+          "container_name": "app_8-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[9]",
+          "app_name": "app_8",
+          "performance": 0.022987397260273976,
+          "replicas": 8,
+          "cores": 7758.246575342468
+        },
+        {
+          "container_name": "app_8-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[10]",
+          "app_name": "app_8",
+          "performance": 0.022987397260273976,
+          "replicas": 8,
+          "cores": 7758.246575342468
+        },
+        {
+          "container_name": "app_8-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[11]",
+          "app_name": "app_8",
+          "performance": 0.022987397260273976,
+          "replicas": 8,
+          "cores": 7758.246575342468
+        },
+        {
+          "container_name": "app_8-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[12]",
+          "app_name": "app_8",
+          "performance": 0.022987397260273976,
+          "replicas": 8,
+          "cores": 7758.246575342468
+        },
+        {
+          "container_name": "app_8-c6i_m6i_r6i",
+          "vm_name": "c6i.32xlarge[13]",
+          "app_name": "app_8",
+          "performance": 0.022987397260273976,
+          "replicas": 4,
+          "cores": 7758.246575342468
+        }
+      ],
+      "total_replicas": 44,
+      "total_perf": 1.0114454794520549
+    }
+  },
+  "units": {
+    "cost": "usd/h",
+    "perf": "req/s",
+    "cores": "mcores"
+  }
+}

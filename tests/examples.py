@@ -1,8 +1,10 @@
+"""Provides functions to define examples in code"""
 from cloudmodel.unified.units import ComputationalUnits, RequestsPerTime, Storage
 from fcma import App, AppFamilyPerf, System
 
 
 def example1(aws_eu_west_1):
+    "Example 1"
     apps = {
         "appA": App(name="appA", sfmpl=0.5),
         "appB": App(name="appB", sfmpl=0.2),
@@ -66,6 +68,7 @@ def example1(aws_eu_west_1):
 
 
 def example2(aws_eu_west_1):
+    "Example 2"
     apps = {
         "appA": App(name="appA"),
     }
@@ -105,6 +108,7 @@ def example2(aws_eu_west_1):
 
 
 def example3(aws_eu_west_1):
+    "Example 3"
     apps = {
         "app_0": App(name="app_0"),
         "app_1": App(name="app_1"),
@@ -134,6 +138,7 @@ def example3(aws_eu_west_1):
 
 
 def example4(aws_eu_west_1):
+    "Example 4"
     apps = {
         "app_0": App(name="app_0"),
         "app_1": App(name="app_1"),

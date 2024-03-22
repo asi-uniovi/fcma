@@ -5,6 +5,7 @@ from pulp import PULP_CBC_CMD  # type: ignore
 from pint import set_application_registry
 from cloudmodel.unified.units import ureg
 from fcma.serialization import ProblemSerializer
+from fcma.model import SolutionSummary
 
 set_application_registry(ureg)
 
@@ -25,4 +26,7 @@ with open("bug.json", "w") as f:
 
 ProblemPrinter(problem).print()
 
-problem.solve(fcma.SolvingPars(speed_level=2))
+sol = problem.solve(fcma.SolvingPars(speed_level=2))
+ss = SolutionSummary(sol)
+with open("bug_sol.json", "w") as f:
+    f.write(json.dumps(ss.as_dict(), indent=2))
