@@ -3,6 +3,7 @@
 import pytest
 from fcma import SolutionSummary, Fcma
 from fcma.serialization import ProblemSerializer
+from fcma import model
 from .examples import example1, example2, example3, example4
 
 
@@ -35,6 +36,7 @@ def test_example3_as_dict(aws_eu_west_1):
     }
 
     assert len(sys["instance_classes"]) == 24
+    assert pr_dict["version"] == model.__version__
 
 
 @pytest.mark.parametrize(

@@ -19,6 +19,13 @@ from cloudmodel.unified.units import (
     Quantity,
 )
 
+# This is the version of the model. It should be changed if the model
+# includes new fields which makes it incompatible with previous versions
+# Note that the package versio (fcma.__version__) can be different
+# if the solver evolves with new features, but the model remains
+# the same
+__version__ = "0.1.0"
+
 # Minimum difference so that two quantities are different
 DELTA_VAL = 0.000001
 # Maximum CPU cores difference for two "equal" CPU values.
