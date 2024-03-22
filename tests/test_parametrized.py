@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name
 """
 The tests are parametrized, so a few functions perform a lot of tests. The parameters are
 the example to run and the speed_level to compute the solution.
@@ -19,16 +20,11 @@ from itertools import product
 import json
 from pathlib import Path
 import pytest
-from pytest import approx
 from cloudmodel.unified.units import ComputationalUnits, RequestsPerTime, Storage
-from fcma import App, AppFamilyPerf, System, Fcma, SolvingPars, Solution
+from fcma import App, AppFamilyPerf, System, Fcma
 from fcma.visualization import SolutionPrinter
-from fcma.model import Vm, SolutionSummary
-import importlib.util
-import os
+from fcma.model import SolutionSummary
 from .examples import example1, example2, example3, example4
-
-from cloudmodel.unified.units import CurrencyPerTime
 
 
 # Global variables for the different combinations
@@ -45,63 +41,14 @@ cases_with_solutions = [
 
 
 @pytest.fixture(scope="module")
-def aws_eu_west_1():
-    # This fixture imports the AWS eu-west-1 module from the examples folder, making
-    # it accesible to the tests. It cannot be imported directly because the examples folder is
-    # not part of fcma and thus is not installed
-    path_to_module = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "examples", "aws_eu_west_1.py")
-    )
-    spec = importlib.util.spec_from_file_location("aws_eu_west_1", path_to_module)
-    aws_eu_west_1 = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(aws_eu_west_1)
-    return aws_eu_west_1
-
-
-@pytest.fixture(scope="module")
-def example_data(aws_eu_west_1, request) -> tuple[System, dict[App, RequestsPerTime]]:
-    """Defines a set of parameters for the problem received as parameter"""
-    # The parameter is a function whirh returns the data for the example
-    example = request.param
-    return example(aws_eu_west_1)
-
-
-@pytest.fixture(scope="module")
-def example_solving_pars(request) -> SolvingPars:
-    """Defines parameters for solving the example 1, with different speed levels.
-    Returns the speed level received as parameter and the SolvingPars object"""
-
-    # Three speed levels are possible: 1, 2 and 3, being speed level 1 the slowest, but the one giving the best
-    # cost results. A solver with options can be passed for speed levels 1 and 2, or defaults are used. For instance:
-    #             from pulp import PULP_CBC_CMD
-    #             solver = PULP_CBC_CMD(timeLimit=10, gapRel=0.01, threads=8)
-    #             solving_pars = SolvingPars(speed_level=1, solver=solver)
-    # More information can be found on: https://coin-or.github.io/pulp/technical/solvers.html
-    speed = request.param
-    solving_pars = SolvingPars(speed_level=speed)
-    return speed, solving_pars
-
-
-@pytest.fixture(scope="module")
-def example_solution(example_data, example_solving_pars) -> tuple[Fcma, SolvingPars, Solution]:
-    """Instantiates a Fcma problem and solves it. Returns the problem, the solving parameters
-    and the solution"""
-    # Solve the allocation problem
-    Vm._last_ic_index = {}
-    problem = Fcma(*example_data)
-    solution = problem.solve(example_solving_pars[1])
-    return problem, example_solving_pars, solution
-
-
-@pytest.fixture(scope="module")
-def example1_expected_vms_SolutionPrinter(request) -> list:
+def example1_solution_printer_expected_vms(request) -> list:
     """Reads a json file (received as parameter) which contains the expected VMs and their prices.
     Returns a list of "rows", each one containing the name of a instance class with the number
     of instances in parenthesis, and the price of the instances of that class.
     """
     filename = request.param
     path = Path(__file__).parent / Path("expected_sols") / filename
-    with open(path, "r") as file:
+    with open(path, "r", encoding="utf-8") as file:
         data = json.load(file)
     # Organize by rows instead of columns
     data = [[*row] for row in zip(*data)]
@@ -109,7 +56,7 @@ def example1_expected_vms_SolutionPrinter(request) -> list:
 
 
 @pytest.fixture(scope="module")
-def example1_expected_allocation_SolutionPrinter(request) -> dict:
+def example1_expected_solution_printer_expected_allocation(request) -> dict:
     """Reads a json file (received as parameter) which contains the allocation of containers
     for each app. Returns a dictionary in which the keys are the app names and the values
     are lists of "rows", each one containing the VM in which the container is deployed,
@@ -118,7 +65,7 @@ def example1_expected_allocation_SolutionPrinter(request) -> dict:
     """
     filename = request.param
     path = Path(__file__).parent / Path("expected_sols") / filename
-    with open(path, "r") as file:
+    with open(path, "r", encoding="utf-8") as file:
         data = json.load(file)
     # Organize by rows instead of columns
     for app in data:
@@ -126,22 +73,14 @@ def example1_expected_allocation_SolutionPrinter(request) -> dict:
     return data
 
 
-@pytest.fixture(scope="module")
-def expected_solution_summary(request) -> SolutionSummary:
-    filename = request.param
-    path = Path(__file__).parent / Path("expected_sols") / filename
-    with open(path, "r") as file:
-        data = json.load(file)
-    ss = SolutionSummary.from_dict(data)
-    return ss
-
-
 # ==============================================================================
 # Tests
 # ==============================================================================
 
 
+@pytest.mark.smoke
 def test_bad_problem_is_rejected(aws_eu_west_1):
+    """A problem that cannot be solved raises an exception"""
     apps = {"appA": App(name="appA")}
     workloads = {apps["appA"]: RequestsPerTime("20  req/s")}
     system: System = {
@@ -156,14 +95,19 @@ def test_bad_problem_is_rejected(aws_eu_west_1):
     assert "enough cores or memory" in str(excinfo.value)
 
 
+@pytest.mark.smoke
 @pytest.mark.parametrize("example_data", examples, indirect=["example_data"])
 def test_example_data_creation(example_data):
+    """Smoke test to check that the generation of the different examples
+    does not break"""
     # Check the data
     assert example_data is not None
 
 
+@pytest.mark.smoke
 @pytest.mark.parametrize("example_solving_pars", speeds, indirect=["example_solving_pars"])
 def test_example_solving_config(example_solving_pars):
+    """Smoke test for the example_solving_pars fixture"""
     # Check the solving configuration
     speed, config = example_solving_pars
     assert config is not None
@@ -176,10 +120,11 @@ def test_example_solving_config(example_solving_pars):
     indirect=["example_data", "example_solving_pars"],
 )
 def test_example_solution_is_feasible(example_solution):
+    """Check that the provided examples are feasible"""
     *_, solution = example_solution
 
     # Check the solution is feasible
-    assert solution.is_infeasible() == False
+    assert solution.is_infeasible() is False
 
 
 @pytest.mark.parametrize(
@@ -187,11 +132,13 @@ def test_example_solution_is_feasible(example_solution):
     list(product(examples, speeds)),
     indirect=["example_data", "example_solving_pars"],
 )
-def test_example_solution_is_valid(example_solution):
+def test_example_solution_check_allocation_is_valid(example_solution):
+    """Check that the solution for the examples has no internal
+    contradiction, using the method Fcma.check_allocation()"""
     fcma_problem, *_ = example_solution
 
     # Check the solution has no contradictions
-    slack = fcma_problem.check_allocation()
+    fcma_problem.check_allocation()
 
 
 # ==============================================================================
@@ -199,20 +146,22 @@ def test_example_solution_is_valid(example_solution):
 # ==============================================================================
 
 
-def test_SolutionPrinter_is_infeasible(aws_eu_west_1, monkeypatch, capsys):
+def test_solution_printer_is_infeasible(aws_eu_west_1, monkeypatch, capsys):
+    """Test that the solution printer produces no tables when
+    the problem is infeasible"""
     # We solve a perfectly solvable problem, but we using monkeypatching
     # to fake pulp reporting it is infeasible
-    apps = {"appA": App(name="appA")}
-    workloads = {apps["appA"]: RequestsPerTime("20  req/s")}
+    apps = {"appX": App(name="appX")}
+    workloads = {apps["appX"]: RequestsPerTime("10  req/s")}
     system: System = {
-        (apps["appA"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
-            cores=ComputationalUnits("400 mcores"),
-            mem=Storage("500 mebibytes"),
-            perf=RequestsPerTime("0.4 req/s"),
+        (apps["appX"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
+            cores=ComputationalUnits("500 mcores"),
+            mem=Storage("300 mebibytes"),
+            perf=RequestsPerTime("0.5 req/s"),
         ),
     }
 
-    from fcma import model
+    from fcma import model  # pylint: disable=import-outside-toplevel
 
     # Fake solving to get an infeasible solution
     monkeypatch.setattr(
@@ -234,16 +183,20 @@ def test_SolutionPrinter_is_infeasible(aws_eu_west_1, monkeypatch, capsys):
 
 
 @pytest.mark.parametrize(
-    "example_data, example_solving_pars, example1_expected_vms_SolutionPrinter",
+    "example_data, example_solving_pars, example1_solution_printer_expected_vms",
     [
         (example1, 1, "solutionprinter_vms_example1_speed_1.json"),
         (example1, 2, "solutionprinter_vms_example1_speed_2.json"),
     ],
-    indirect=["example_data", "example_solving_pars", "example1_expected_vms_SolutionPrinter"],
+    indirect=["example_data", "example_solving_pars", "example1_solution_printer_expected_vms"],
 )
-def test_example_solution_printer_vms_and_prices(
-    example_solution, example1_expected_vms_SolutionPrinter
+def test_example1_solution_printer_vms_and_prices(
+    example_solution, example1_solution_printer_expected_vms
 ):
+    """Test that the data in the VM table generated by SolutionPrinter
+    matches the expected content for the examples"""
+
+    # pylint: disable=protected-access
     *_, solution = example_solution
     sp = SolutionPrinter(solution)
 
@@ -252,13 +205,13 @@ def test_example_solution_printer_vms_and_prices(
     # Organize by rows instead of columns
     solution_data = [col._cells for col in vm_table.columns]
     solution_data = [[*row] for row in zip(*solution_data)]
-    assert len(solution_data) == len(example1_expected_vms_SolutionPrinter)
+    assert len(solution_data) == len(example1_solution_printer_expected_vms)
     for row in solution_data:
-        assert row in example1_expected_vms_SolutionPrinter
+        assert row in example1_solution_printer_expected_vms
 
 
 @pytest.mark.parametrize(
-    "example_data, example_solving_pars, example1_expected_allocation_SolutionPrinter",
+    "example_data, example_solving_pars, example1_expected_solution_printer_expected_allocation",
     [
         (example1, 1, "solutionprinter_allocation_example1_speed_1.json"),
         (example1, 2, "solutionprinter_allocation_example1_speed_2.json"),
@@ -266,12 +219,15 @@ def test_example_solution_printer_vms_and_prices(
     indirect=[
         "example_data",
         "example_solving_pars",
-        "example1_expected_allocation_SolutionPrinter",
+        "example1_expected_solution_printer_expected_allocation",
     ],
 )
-def test_example_solution_printer_apps_allocations(
-    example_solution, example1_expected_allocation_SolutionPrinter
+def test_example1_solution_printer_apps_allocations(
+    example_solution, example1_expected_solution_printer_expected_allocation
 ):
+    """Test that the data in the Apps table generated by SolutionPrinter
+    matches the expected content for the examples"""
+    # pylint: disable=protected-access
     fcma_problem, _, solution = example_solution
     sp = SolutionPrinter(solution)
     apps_allocations = sp._get_app_tables()
@@ -282,7 +238,7 @@ def test_example_solution_printer_apps_allocations(
     assert problem_apps == solution_apps
 
     def check_app_alloc(app, sol_data):
-        expected_alloc = example1_expected_allocation_SolutionPrinter[app]
+        expected_alloc = example1_expected_solution_printer_expected_allocation[app]
         assert len(sol_data) == len(expected_alloc)
         for col in sol_data:
             assert col in expected_alloc
@@ -299,32 +255,34 @@ def test_example_solution_printer_apps_allocations(
 # ==============================================================================
 
 
-def test_SolutionSummary_is_infeasible(aws_eu_west_1, monkeypatch):
+def test_solution_summary_is_infeasible(aws_eu_west_1, monkeypatch):
+    """Test that the SolutionSummary produces empty data structures
+    when the solution is not feasible"""
     # We solve a perfectly solvable problem, but we using monkeypatching
     # to fake pulp reporting it is infeasible
-    apps = {"appA": App(name="appA")}
-    workloads = {apps["appA"]: RequestsPerTime("20  req/s")}
+
+    # pylint: disable=protected-access
+    apps = {"appZ": App(name="appZ")}
+    workloads = {apps["appZ"]: RequestsPerTime("15  req/s")}
     system: System = {
-        (apps["appA"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
-            cores=ComputationalUnits("400 mcores"),
-            mem=Storage("500 mebibytes"),
-            perf=RequestsPerTime("0.4 req/s"),
+        (apps["appZ"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
+            cores=ComputationalUnits("600 mcores"),
+            mem=Storage("200 mebibytes"),
+            perf=RequestsPerTime("0.6 req/s"),
         ),
     }
 
-    from fcma import model
+    from fcma import model  # pylint: disable=import-outside-toplevel
 
     # Fake solving to get an infeasible solution
     monkeypatch.setattr(
         model.FcmaStatus, "pulp_to_fcma_status", lambda *_: model.FcmaStatus.INVALID
     )
-    # TODO: Fix bug to avoid mokeypatching get_worst_status too
-    monkeypatch.setattr(model.FcmaStatus, "get_worst_status", lambda *_: model.FcmaStatus.INVALID)
     problem = Fcma(system, workloads)
     solution = problem.solve()
 
     summary = SolutionSummary(solution)
-    assert summary.is_infeasible() == True
+    assert summary.is_infeasible() is True
 
     vm_summary = summary.get_vm_summary()
     assert vm_summary.total_num == 0
@@ -340,7 +298,10 @@ def test_SolutionSummary_is_infeasible(aws_eu_west_1, monkeypatch):
     list(product(examples, speeds)),
     indirect=["example_data", "example_solving_pars"],
 )
-def test_SolutionSummary_as_dict_and_back(example_solution):
+def test_solution_summary_as_dict_and_back(example_solution):
+    """Test that the SolutionSummary serialization code works correctly
+    by converting it to a dictionary and then back to a SolutionSummary
+    and check that the final object is equal to the original"""
     *_, solution = example_solution
     summary = SolutionSummary(solution)
     summary_dict = summary.as_dict()
@@ -359,7 +320,9 @@ def test_SolutionSummary_as_dict_and_back(example_solution):
     cases_with_solutions,
     indirect=["example_data", "example_solving_pars", "expected_solution_summary"],
 )
-def test_example_SolutionSummary_vms(example_solution, expected_solution_summary):
+def test_example_solution_summary_vms(example_solution, expected_solution_summary):
+    """Check that the VM summary of the solution matches the expected one
+    for the known examples"""
     *_, solution = example_solution
     summary = SolutionSummary(solution)
     vm_alloc = summary.get_vm_summary()
@@ -372,7 +335,9 @@ def test_example_SolutionSummary_vms(example_solution, expected_solution_summary
     cases_with_solutions,
     indirect=["example_data", "example_solving_pars", "expected_solution_summary"],
 )
-def test_example_SolutionSummary_all_apps(example_solution, expected_solution_summary):
+def test_example_solution_summary_all_apps(example_solution, expected_solution_summary):
+    """Check that the allocation of containers for each app in the solution
+    matches the expected one for the known examples"""
     *_, solution = example_solution
     summary = SolutionSummary(solution)
     app_alloc = summary.get_all_apps_allocations()
@@ -386,7 +351,8 @@ def test_example_SolutionSummary_all_apps(example_solution, expected_solution_su
     cases_with_solutions[:2],
     indirect=["example_data", "example_solving_pars", "expected_solution_summary"],
 )
-def test_example_SolutionSummary_single_app(example_solution, expected_solution_summary):
+def test_example_solution_summary_single_app(example_solution, expected_solution_summary):
+    """Test for the method SolutionSummary.get_app_allocation_summary()"""
     *_, solution = example_solution
     summary = SolutionSummary(solution)
     expected_allocation = expected_solution_summary.get_all_apps_allocations()
