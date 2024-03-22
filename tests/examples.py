@@ -1,4 +1,5 @@
 """Provides functions to define examples in code"""
+
 from cloudmodel.unified.units import ComputationalUnits, RequestsPerTime, Storage
 from fcma import App, AppFamilyPerf, System
 
