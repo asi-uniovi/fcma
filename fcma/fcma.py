@@ -690,7 +690,7 @@ class Fcma:
 
         # The initial list of virtual machines (vms) come from the pre-allocation phase.
         # All the vms are empty, i.e, do not allocate any container at this time.
-        vms = [Vm(ic) for ic in fm_sol["n_nodes"] for _ in range(fm_sol["n_nodes"][ic])]
+        vms = [Vm(ic) for ic in fm_sol["n_nodes"] for _ in range(int(fm_sol["n_nodes"][ic]))]
 
         # The containers that must be allocated to instance classes in the family are previously
         # sorted by decreasing number of container cores, as required by FFD algorithm.
