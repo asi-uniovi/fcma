@@ -49,14 +49,6 @@ class ProblemSerializer:
         self._prepare_problem()
         return asdict(self._problem_data)
 
-    def _prepare_workloads(self) -> dict:
-        if self._workloads is None:
-            unit = self.cls_units_dict[RequestsPerTime]
-            self._workloads = {
-                app.name: wl.m_as(unit) for app, wl in self.problem._workloads.items()
-            }
-        return self._workloads
-
     def _prepare_problem(self):
         if self._problem_data is not None:
             return

@@ -231,7 +231,7 @@ def get_fm_aggregation_pars(
 
 
 # pylint: disable = E, W, R, C
-def solve_cbc_patched(self, lp, use_mps=True):
+def solve_cbc_patched(self, lp, use_mps=True):      # pragma: no cover
     """
     Solve a MIP problem using CBC patched from original PuLP function
     to save a log with cbc's output and take from it the best bound.
