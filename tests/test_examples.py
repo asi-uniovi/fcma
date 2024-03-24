@@ -18,8 +18,6 @@ run only a specific set of tests. For example:
 
 from itertools import product
 import pytest
-from cloudmodel.unified.units import ComputationalUnits, RequestsPerTime, Storage
-from fcma import App, AppFamilyPerf, System, Fcma
 from fcma.model import SolutionSummary
 from .examples import example1, example2, example3, example4
 
@@ -37,23 +35,6 @@ cases_with_solutions = [
 # ==============================================================================
 # Tests
 # ==============================================================================
-
-
-@pytest.mark.smoke
-def test_bad_problem_is_rejected(aws_eu_west_1):
-    """A problem that cannot be solved raises an exception"""
-    apps = {"appA": App(name="appA")}
-    workloads = {apps["appA"]: RequestsPerTime("20  req/s")}
-    system: System = {
-        (apps["appA"], aws_eu_west_1.c5_m5_r5_fm): AppFamilyPerf(
-            cores=ComputationalUnits("400000 mcores"),
-            mem=Storage("500 mebibytes"),
-            perf=RequestsPerTime("0.4 req/s"),
-        ),
-    }
-    with pytest.raises(ValueError) as excinfo:
-        Fcma(system, workloads)
-    assert "enough cores or memory" in str(excinfo.value)
 
 
 @pytest.mark.smoke

@@ -24,13 +24,14 @@ def export_example_to_json(
 ):
     """Generate a problem file for the example i"""
     aws_eu_west_1 = import_aws_definitions(
-        Path(__file__).parent / ".." / "examples" / "aws_eu_west_1.py")
+        Path(__file__).parent / ".." / "examples" / "aws_eu_west_1.py"
+    )
     example = example_list[example_number]
     problem_params = example(aws_eu_west_1)
     problem = Fcma(*problem_params)
     serializer = ProblemSerializer(problem)
     data = serializer.as_dict()
-    with open(Path(path) / filename.format(example_number+1), "w", encoding="utf-8") as file:
+    with open(Path(path) / filename.format(example_number + 1), "w", encoding="utf-8") as file:
         json.dump(data, file, indent=2)
 
 
