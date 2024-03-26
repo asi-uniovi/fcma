@@ -629,26 +629,26 @@ class Fcma:
         for ic in fm.ics:
             vm = Vm(ic, ignore_ic_index=True)
             n = vm.get_max_allocatable_cc(cc)
-            ics_in_fm.append(ic)
-            n_allocatable.append(n)
+            if n > 0:
+                ics_in_fm.append(ic)
+                n_allocatable.append(n)
 
         # Sort by decreasing number of allocatable containers and remove those that can allocate the same
         # number of containers but are more expensive
         remove_ics_same_param_higher_price(ics_in_fm, n_allocatable, reverse=True)
-        # Allocate using the largest instance classes to avoid a sequence of small virtual machines
+
+        # Use the smallest virtual machine when it is able to allocate all the replicas
+        if replicas <= n_allocatable[-1]:
+            new_vm = Vm(ics_in_fm[-1])
+            new_vm.history.append("Added")
+            replicas -= new_vm.allocate(cc, replicas)
+            vms.append(new_vm)
+
+        # Otherwise, allocate using the largest instance classes to avoid a sequence of small virtual machines
         # that would reduce the probability of allocating containers coming from next applications.
         while replicas > 0:
             index = 0
             for ic in ics_in_fm:
-                # If this instance class and the following can not allocate containers
-                # use one node of the prevous instance class
-                if n_allocatable[index] == 0:
-                    new_vm = Vm(ics_in_fm[index - 1])
-                    new_vm.history.append("Added")
-                    replicas -= new_vm.allocate(cc, replicas)
-                    vms.append(new_vm)
-                    break
-
                 n_vms = replicas // n_allocatable[index]
                 if n_vms >= 1:
                     if index > 0 and replicas / n_allocatable[index] > 1:
@@ -695,7 +695,6 @@ class Fcma:
         # The containers that must be allocated to instance classes in the family are previously
         # sorted by decreasing number of container cores, as required by FFD algorithm.
         ccs = list(fm_sol["ccs"].items())
-
         ccs.sort(key=lambda cc_n: cc_n[0].cores, reverse=True)
 
         # For every container class in the solution, cc, we must allocate n_containers
