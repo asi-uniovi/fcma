@@ -755,6 +755,7 @@ class Fcma:
             # the most important, so now allocate as many containers as possible in the virtual machines
             # with the maximum number of containers. In any case, we distribute containers equitably to reduce
             # the maximum performance loss on a single node failure.
+            allocatable_max.sort(key=lambda vm_n: vm_n[1])
             n_vms = len(allocatable_max)
             for i in range(n_vms):
                 vm = allocatable_max[i][0]
