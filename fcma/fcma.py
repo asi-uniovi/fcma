@@ -403,10 +403,7 @@ class Fcma:
         # Enough performance
         for app_name in self._ccs:
             constraint_name = f"Enough_performance_for_{str(app_name)}"
-            # Remove old constraints
-            if constraint_name in self._lp_problem.constraints:
-                del self._lp_problem.constraints[constraint_name]
-            # Add new constraints
+            # Add constraints
             self._lp_problem += (
                 lpSum(self._y_vars[str(cc)] * cc.perf.magnitude for cc in self._ccs[app_name])
                 >= self._workloads[apps[app_name]].magnitude,
@@ -858,7 +855,7 @@ class Fcma:
 
         return cost, vms
 
-    def _preallocation_phase_speed_levels_1_2(self, speed_level) -> dict:
+    def _preallocation_phase_speed_levels_2_3(self, speed_level) -> dict:
         """
         Carries out the pre-allocation phase for speed levels 1 and 2.
         :return: A dictionary with the pre-allocation solution.
@@ -1009,7 +1006,7 @@ class Fcma:
         # -----------------------------------------------------------
         self._solving_stats.pre_allocation_status = FcmaStatus.INVALID
         if speed_level in (2, 3):
-            fms_sol = self._preallocation_phase_speed_levels_1_2(speed_level)
+            fms_sol = self._preallocation_phase_speed_levels_2_3(speed_level)
         else:  # For speed level 1
             fms_sol = self._preallocation_phase_speed_level_1()
 
