@@ -28,6 +28,8 @@ perf_dir = "perf_data"
 perf_file_prefix = f"{perf_dir}/perf"
 perf_ref_file = f"{perf_file_prefix}-0.csv"
 
+repetitions = 1  # Number of repetitions to get average times
+
 gap_rel = 0.02  # Maximum relative gap between enay ILP solution and the optimal
 solver = PULP_CBC_CMD(msg=0, gapRel=gap_rel)
 
@@ -39,6 +41,7 @@ csv_label_row = [
     "time(sec)",
     "relative_cost",
     "relative_time",
+    "comment",
 ]
 
 
@@ -157,9 +160,13 @@ with open(perf_path, "w", newline="") as csv_file:
             for speed_level in (1, 2, 3):
                 current_time = datetime.datetime.now().strftime("%H:%M:%S")
                 print(f"{current_time}: {json_file_name}; speed level = {speed_level}")
-                solution = fcma_problem.solve(
-                    fcma.SolvingPars(speed_level=speed_level, solver=solver)
-                )
+                avg_time = 0
+                for i in range(repetitions):
+                    solution = fcma_problem.solve(
+                        fcma.SolvingPars(speed_level=speed_level, solver=solver)
+                    )
+                    avg_time += solution.statistics.total_seconds
+                solution.statistics.total_seconds = avg_time / repetitions
                 if speed_level == 1:
                     lower_bound = solution.statistics.pre_allocation_cost.magnitude
                     if solution.statistics.pre_allocation_status == FcmaStatus.FEASIBLE:
@@ -174,6 +181,7 @@ with open(perf_path, "w", newline="") as csv_file:
                 )
                 perf_data.insert(0, speed_level)
                 perf_data.insert(0, json_file_name)
+                perf_data.append("")  # For comments
                 csv_writer.writerow(perf_data)
     if len(file_names) > 0:
         # Write total rows in the CSV file
@@ -186,5 +194,6 @@ with open(perf_path, "w", newline="") as csv_file:
                 f'{total_data[speed_level]["time(sec)"]:.4f}',
                 f'{total_data[speed_level]["relative_cost"] / total_data[speed_level]["n"]:.4f}',
                 f'{total_data[speed_level]["relative_time"] / total_data[speed_level]["n"]:.4f}',
+                "",
             ]
             csv_writer.writerow(total_data_row)

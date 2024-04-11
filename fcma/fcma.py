@@ -698,7 +698,11 @@ class Fcma:
         for cc, n_containers in ccs:
 
             # Get the maximum number of containers in a vm to meet SFMPL application parameter
-            max_containers_in_vm = int(floor(cc.app.sfmpl * self._workloads[cc.app] / cc.perf))
+            max_containers_in_vm = cc.app.sfmpl * self._workloads[cc.app] / cc.perf
+            if cc.app.sfmpl == 1.0:  # In this case there are not constraints
+                max_containers_in_vm = int(ceil(max_containers_in_vm))
+            else:
+                max_containers_in_vm = int(floor(max_containers_in_vm))
 
             # -------------------- (1) --------------------
             # Allocate the maximum number of containers in each virtual machine. If it is not possible

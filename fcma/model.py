@@ -469,7 +469,7 @@ class ContainerClass:
         :return: A dictionary with the aggregations.
         """
 
-        aggs = list(self.aggs)  # List of aggregations that include the 1
+        aggs = list(self.aggs)  # List of aggregations, which include the 1
         aggs.sort(reverse=True)  # Aggregations are sorted by increasing values
         res = {}
         while replicas > 0:
@@ -491,7 +491,7 @@ class ContainerClass:
         :return: The memory required if the replicas were aggregated.
         """
 
-        # Firsly, get the aggregations for the given number of replicas
+        # Firstly, get the aggregations for the given number of replicas
         n_aggs = self.get_aggregations(replicas)
         # Add the memory required by all the aggregations
         mem = Storage("0 gibibytes")
@@ -610,7 +610,7 @@ class Vm:
 
     def is_allocatable_cc(self, cc: ContainerClass, replicas: int) -> bool:
         """
-        Return if the given number of replicas of the container class ar allocatable
+        Return if the given number of replicas of the container class are allocatable
         in the virtual machine.
         :param cc: Container class.
         :param replicas: Number of replicas of the container class.
@@ -730,6 +730,18 @@ class Vm:
 
         return n_allocatable_replicas
 
+    @staticmethod
+    def _get_parent_families(fm: InstanceClassFamily) -> list[InstanceClassFamily]:
+        """
+        Get a list with all the parent families of a given family.
+        :param fm: A family to get parent families.
+        :return: A list with all the parent families.
+        """
+        fms = copy.copy(fm.parent_fms)
+        for parent_fm in fm.parent_fms:
+            fms.extend(Vm._get_parent_families(parent_fm))
+        return list(set(fms))
+
     def cheapest_ic_promotion(self, cc: ContainerClass) -> InstanceClass:
         """
         Find the cheapest instance class in the same family with enough number cores and memory to
@@ -738,18 +750,39 @@ class Vm:
         :return: The cheapest instance class or None if there is no instance class able to allocate all the containers.
         """
 
-        fm = self.ic.family
-        cheapest_ic = None
-        min_price = None
-        for ic in fm.ics:
-            if (
-                self.free_cores + ic.cores - self.ic.cores + DELTA_CPU >= cc.cores
-                and self.free_mem + ic.mem - self.ic.mem + DELTA_MEM >= cc.mem[0]
-            ):
-                if cheapest_ic is None or ic.price < min_price:
-                    cheapest_ic = ic
-                    min_price = ic.price
-        return cheapest_ic
+        # Get a list with all the instance classes in the same family or parent families,
+        # except the instance class of the virtual machine
+        fms = [self.ic.family]
+        fms.extend(Vm._get_parent_families(self.ic.family))
+        ics = []
+        for fm in fms:
+            ics.extend(fm.ics)
+        ics = list(set(ics))
+        ics.remove(self.ic)
+
+        # Remove instance classes with less memory or cores than the current one
+        ics = [ic for ic in ics if ic.cores >= self.ic.cores and ic.mem >= self.ic.mem]
+
+        # Sort instance classes by increasing price
+        ics.sort(key=lambda ic: ic.price)
+
+        for ic in ics:
+            # Check if there are enough cores for 1 container
+            free_cores = self.free_cores + ic.cores - self.ic.cores
+            if free_cores + DELTA_CPU < cc.cores:
+                continue
+
+            # Check if there are enough memory for 1 container
+            free_mem = self.free_mem + ic.mem - self.ic.mem
+            replicas = 0  # Current replicas of the container in the vm
+            for cg in self.cgs:
+                if cg.cc == cc:
+                    replicas = cg.replicas
+                    break
+            mem_inc = cc.get_mem_from_aggregations(replicas+1) - cc.get_mem_from_aggregations(replicas)
+            if free_mem + DELTA_MEM > mem_inc:
+                return ic
+        return None
 
 
 @dataclass(frozen=True)
