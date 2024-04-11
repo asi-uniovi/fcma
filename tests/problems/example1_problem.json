@@ -1,0 +1,453 @@
+{
+  "units": {
+    "cpu": "mcores",
+    "cost/t": "usd/h",
+    "workload": "req/h",
+    "mem": "GiB"
+  },
+  "system": {
+    "apps": {
+      "appA": {
+        "name": "appA",
+        "sfmpl": 0.5
+      },
+      "appB": {
+        "name": "appB",
+        "sfmpl": 0.2
+      },
+      "appC": {
+        "name": "appC",
+        "sfmpl": 1.0
+      },
+      "appD": {
+        "name": "appD",
+        "sfmpl": 1.0
+      }
+    },
+    "families": {
+      "c5_m5_r5": [],
+      "c6g_m6g_r6g": [],
+      "c5": [
+        "c5_m5_r5"
+      ],
+      "m5": [
+        "c5_m5_r5"
+      ],
+      "r5": [
+        "c5_m5_r5"
+      ],
+      "c6g": [
+        "c6g_m6g_r6g"
+      ],
+      "m6g": [
+        "c6g_m6g_r6g"
+      ],
+      "r6g": [
+        "c6g_m6g_r6g"
+      ]
+    },
+    "instance_classes": {
+      "c5.large": {
+        "cores": 1000.0,
+        "mem": 4,
+        "price": 0.096,
+        "family": "c5"
+      },
+      "c5.xlarge": {
+        "cores": 2000.0,
+        "mem": 8,
+        "price": 0.192,
+        "family": "c5"
+      },
+      "c5.2xlarge": {
+        "cores": 4000.0,
+        "mem": 16,
+        "price": 0.384,
+        "family": "c5"
+      },
+      "c5.4xlarge": {
+        "cores": 8000.0,
+        "mem": 32,
+        "price": 0.768,
+        "family": "c5"
+      },
+      "c5.9xlarge": {
+        "cores": 18000.0,
+        "mem": 72,
+        "price": 1.728,
+        "family": "c5"
+      },
+      "c5.12xlarge": {
+        "cores": 24000.0,
+        "mem": 96,
+        "price": 2.3040000000000003,
+        "family": "c5"
+      },
+      "c5.18xlarge": {
+        "cores": 36000.0,
+        "mem": 144,
+        "price": 3.456,
+        "family": "c5"
+      },
+      "c5.24xlarge": {
+        "cores": 48000.0,
+        "mem": 192,
+        "price": 4.6080000000000005,
+        "family": "c5"
+      },
+      "m5.large": {
+        "cores": 1000.0,
+        "mem": 8,
+        "price": 0.107,
+        "family": "m5"
+      },
+      "m5.xlarge": {
+        "cores": 2000.0,
+        "mem": 16,
+        "price": 0.214,
+        "family": "m5"
+      },
+      "m5.2xlarge": {
+        "cores": 4000.0,
+        "mem": 32,
+        "price": 0.428,
+        "family": "m5"
+      },
+      "m5.4xlarge": {
+        "cores": 8000.0,
+        "mem": 64,
+        "price": 0.856,
+        "family": "m5"
+      },
+      "m5.9xlarge": {
+        "cores": 18000.0,
+        "mem": 144,
+        "price": 1.926,
+        "family": "m5"
+      },
+      "m5.12xlarge": {
+        "cores": 24000.0,
+        "mem": 192,
+        "price": 2.568,
+        "family": "m5"
+      },
+      "m5.18xlarge": {
+        "cores": 36000.0,
+        "mem": 288,
+        "price": 3.852,
+        "family": "m5"
+      },
+      "m5.24xlarge": {
+        "cores": 48000.0,
+        "mem": 384,
+        "price": 5.136,
+        "family": "m5"
+      },
+      "r5.large": {
+        "cores": 1000.0,
+        "mem": 16,
+        "price": 0.141,
+        "family": "r5"
+      },
+      "r5.xlarge": {
+        "cores": 2000.0,
+        "mem": 32,
+        "price": 0.282,
+        "family": "r5"
+      },
+      "r5.2xlarge": {
+        "cores": 4000.0,
+        "mem": 64,
+        "price": 0.564,
+        "family": "r5"
+      },
+      "r5.4xlarge": {
+        "cores": 8000.0,
+        "mem": 128,
+        "price": 1.128,
+        "family": "r5"
+      },
+      "r5.9xlarge": {
+        "cores": 18000.0,
+        "mem": 288,
+        "price": 2.538,
+        "family": "r5"
+      },
+      "r5.12xlarge": {
+        "cores": 24000.0,
+        "mem": 384,
+        "price": 3.3839999999999995,
+        "family": "r5"
+      },
+      "r5.18xlarge": {
+        "cores": 36000.0,
+        "mem": 576,
+        "price": 5.076,
+        "family": "r5"
+      },
+      "r5.24xlarge": {
+        "cores": 48000.0,
+        "mem": 768,
+        "price": 6.767999999999999,
+        "family": "r5"
+      },
+      "c6g.large": {
+        "cores": 1000.0,
+        "mem": 4,
+        "price": 0.073,
+        "family": "c6g"
+      },
+      "c6g.xlarge": {
+        "cores": 2000.0,
+        "mem": 8,
+        "price": 0.146,
+        "family": "c6g"
+      },
+      "c6g.2xlarge": {
+        "cores": 4000.0,
+        "mem": 16,
+        "price": 0.292,
+        "family": "c6g"
+      },
+      "c6g.4xlarge": {
+        "cores": 8000.0,
+        "mem": 32,
+        "price": 0.584,
+        "family": "c6g"
+      },
+      "c6g.9xlarge": {
+        "cores": 18000.0,
+        "mem": 72,
+        "price": 1.3139999999999998,
+        "family": "c6g"
+      },
+      "c6g.12xlarge": {
+        "cores": 24000.0,
+        "mem": 96,
+        "price": 1.7519999999999998,
+        "family": "c6g"
+      },
+      "c6g.18xlarge": {
+        "cores": 36000.0,
+        "mem": 144,
+        "price": 2.6279999999999997,
+        "family": "c6g"
+      },
+      "c6g.24xlarge": {
+        "cores": 48000.0,
+        "mem": 192,
+        "price": 3.5039999999999996,
+        "family": "c6g"
+      },
+      "m6g.large": {
+        "cores": 1000.0,
+        "mem": 4,
+        "price": 0.086,
+        "family": "m6g"
+      },
+      "m6g.xlarge": {
+        "cores": 2000.0,
+        "mem": 8,
+        "price": 0.172,
+        "family": "m6g"
+      },
+      "m6g.2xlarge": {
+        "cores": 4000.0,
+        "mem": 16,
+        "price": 0.344,
+        "family": "m6g"
+      },
+      "m6g.4xlarge": {
+        "cores": 8000.0,
+        "mem": 32,
+        "price": 0.688,
+        "family": "m6g"
+      },
+      "m6g.9xlarge": {
+        "cores": 18000.0,
+        "mem": 72,
+        "price": 1.5479999999999998,
+        "family": "m6g"
+      },
+      "m6g.12xlarge": {
+        "cores": 24000.0,
+        "mem": 96,
+        "price": 2.064,
+        "family": "m6g"
+      },
+      "m6g.18xlarge": {
+        "cores": 36000.0,
+        "mem": 144,
+        "price": 3.0959999999999996,
+        "family": "m6g"
+      },
+      "m6g.24xlarge": {
+        "cores": 48000.0,
+        "mem": 192,
+        "price": 4.128,
+        "family": "m6g"
+      },
+      "r6g.large": {
+        "cores": 1000.0,
+        "mem": 4,
+        "price": 0.1128,
+        "family": "r6g"
+      },
+      "r6g.xlarge": {
+        "cores": 2000.0,
+        "mem": 8,
+        "price": 0.2256,
+        "family": "r6g"
+      },
+      "r6g.2xlarge": {
+        "cores": 4000.0,
+        "mem": 16,
+        "price": 0.4512,
+        "family": "r6g"
+      },
+      "r6g.4xlarge": {
+        "cores": 8000.0,
+        "mem": 32,
+        "price": 0.9024,
+        "family": "r6g"
+      },
+      "r6g.9xlarge": {
+        "cores": 18000.0,
+        "mem": 72,
+        "price": 2.0303999999999998,
+        "family": "r6g"
+      },
+      "r6g.12xlarge": {
+        "cores": 24000.0,
+        "mem": 96,
+        "price": 2.7072,
+        "family": "r6g"
+      },
+      "r6g.18xlarge": {
+        "cores": 36000.0,
+        "mem": 144,
+        "price": 4.0607999999999995,
+        "family": "r6g"
+      },
+      "r6g.24xlarge": {
+        "cores": 48000.0,
+        "mem": 192,
+        "price": 5.4144,
+        "family": "r6g"
+      }
+    },
+    "perf": {
+      "(appA, c5_m5_r5)": {
+        "cores": 400.0,
+        "mem": [
+          0.48828125,
+          0.48828125
+        ],
+        "aggs": [
+          1,
+          2
+        ],
+        "maxagg": 2,
+        "perf": 1440.0
+      },
+      "(appB, c5_m5_r5)": {
+        "cores": 80.0,
+        "mem": [
+          0.1953125,
+          0.1953125,
+          0.1953125,
+          0.1953125,
+          0.1953125
+        ],
+        "aggs": [
+          1,
+          2,
+          4,
+          8,
+          12
+        ],
+        "maxagg": 12,
+        "perf": 1800.0
+      },
+      "(appC, c5_m5_r5)": {
+        "cores": 90.0,
+        "mem": [
+          0.341796875,
+          0.341796875,
+          0.341796875,
+          0.341796875
+        ],
+        "aggs": [
+          1,
+          2,
+          4,
+          10
+        ],
+        "maxagg": 10,
+        "perf": 720.0
+      },
+      "(appD, c5_m5_r5)": {
+        "cores": 8500.0,
+        "mem": [
+          24.4140625
+        ],
+        "aggs": [
+          1
+        ],
+        "maxagg": 1,
+        "perf": 3600.0
+      },
+      "(appB, c6g_m6g_r6g)": {
+        "cores": 100.0,
+        "mem": [
+          0.244140625,
+          0.244140625,
+          0.244140625,
+          0.244140625
+        ],
+        "aggs": [
+          1,
+          2,
+          4,
+          10
+        ],
+        "maxagg": 10,
+        "perf": 1260.0
+      },
+      "(appC, c6g_m6g_r6g)": {
+        "cores": 120.0,
+        "mem": [
+          0.439453125,
+          0.439453125,
+          0.439453125,
+          0.439453125
+        ],
+        "aggs": [
+          1,
+          2,
+          4,
+          8
+        ],
+        "maxagg": 8,
+        "perf": 1440.0
+      },
+      "(appD, c6g_m6g_r6g)": {
+        "cores": 6500.0,
+        "mem": [
+          21.484375
+        ],
+        "aggs": [
+          1
+        ],
+        "maxagg": 1,
+        "perf": 2880.0
+      }
+    }
+  },
+  "workloads": {
+    "appA": 21600.0,
+    "appB": 43200.0,
+    "appC": 72000.0,
+    "appD": 54000.0
+  }
+}

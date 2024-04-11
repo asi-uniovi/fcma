@@ -237,7 +237,7 @@ def solve_cbc_patched(self, lp, use_mps=True):      # pragma: no cover
     to save a log with cbc's output and take from it the best bound.
     """
 
-    def take_best_bound_from_log(filename, msg: bool):
+    def take_best_bound_from_log(filename, msg: bool): # pragma: no cover
         """
         Take the lower bound from the log file. If there is a line with "best possible"
         take the minimum between the lower bound and the best possible because the lower
