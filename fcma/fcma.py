@@ -403,10 +403,7 @@ class Fcma:
         # Enough performance
         for app_name in self._ccs:
             constraint_name = f"Enough_performance_for_{str(app_name)}"
-            # Remove old constraints
-            if constraint_name in self._lp_problem.constraints:
-                del self._lp_problem.constraints[constraint_name]
-            # Add new constraints
+            # Add constraints
             self._lp_problem += (
                 lpSum(self._y_vars[str(cc)] * cc.perf.magnitude for cc in self._ccs[app_name])
                 >= self._workloads[apps[app_name]].magnitude,
@@ -701,7 +698,11 @@ class Fcma:
         for cc, n_containers in ccs:
 
             # Get the maximum number of containers in a vm to meet SFMPL application parameter
-            max_containers_in_vm = int(floor(cc.app.sfmpl * self._workloads[cc.app] / cc.perf))
+            max_containers_in_vm = cc.app.sfmpl * self._workloads[cc.app] / cc.perf
+            if cc.app.sfmpl == 1.0:  # In this case there are not constraints
+                max_containers_in_vm = int(ceil(max_containers_in_vm))
+            else:
+                max_containers_in_vm = int(floor(max_containers_in_vm))
 
             # -------------------- (1) --------------------
             # Allocate the maximum number of containers in each virtual machine. If it is not possible
@@ -755,6 +756,7 @@ class Fcma:
             # the most important, so now allocate as many containers as possible in the virtual machines
             # with the maximum number of containers. In any case, we distribute containers equitably to reduce
             # the maximum performance loss on a single node failure.
+            allocatable_max.sort(key=lambda vm_n: vm_n[1])
             n_vms = len(allocatable_max)
             for i in range(n_vms):
                 vm = allocatable_max[i][0]
@@ -857,7 +859,7 @@ class Fcma:
 
         return cost, vms
 
-    def _preallocation_phase_speed_levels_1_2(self, speed_level) -> dict:
+    def _preallocation_phase_speed_levels_2_3(self, speed_level) -> dict:
         """
         Carries out the pre-allocation phase for speed levels 1 and 2.
         :return: A dictionary with the pre-allocation solution.
@@ -1008,7 +1010,7 @@ class Fcma:
         # -----------------------------------------------------------
         self._solving_stats.pre_allocation_status = FcmaStatus.INVALID
         if speed_level in (2, 3):
-            fms_sol = self._preallocation_phase_speed_levels_1_2(speed_level)
+            fms_sol = self._preallocation_phase_speed_levels_2_3(speed_level)
         else:  # For speed level 1
             fms_sol = self._preallocation_phase_speed_level_1()
 
