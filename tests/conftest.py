@@ -59,6 +59,8 @@ def example_solution(example_data, example_solving_pars) -> tuple[Fcma, SolvingP
 def expected_solution_summary(request) -> SolutionSummary:
     """Reads a solution summary from the given json file"""
     filename = request.param
+    if not filename.endswith(".json"):
+        filename += ".json"
     path = Path(__file__).parent / Path("expected_sols") / filename
     with open(path, "r", encoding="utf-8") as file:
         data = json.load(file)

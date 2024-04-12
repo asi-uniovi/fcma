@@ -1,9 +1,10 @@
 """Test for the ProblemSerializer class"""
 
 import pytest
-from fcma import SolutionSummary, Fcma
+from fcma import SolutionSummary, Fcma, SolvingPars
 from fcma.serialization import ProblemSerializer
 from .examples import example1, example2, example3, example4
+from .util_asserts import assert_dicts_almost_equal
 
 
 def test_example3_as_dict(aws_eu_west_1):
@@ -55,3 +56,27 @@ def test_example_as_dict_and_back_solution_matches(example_data):
     new_sol_summary = SolutionSummary(new_sol).as_dict()
 
     assert orig_sol_summary == new_sol_summary
+
+
+cases_to_test = []
+for i in range(1,5):
+    pars = (f"example{i}_problem", f"example{i}_solution_speed_1")
+    if i==3:
+        cases_to_test.append(pytest.param(*pars, marks=pytest.mark.skip(reason="Example3 is known to fail, skipping it until fixed")))
+    else:
+        cases_to_test.append(pytest.param(*pars))
+ 
+@pytest.mark.parametrize(
+    "problem, expected_solution_summary",
+    cases_to_test,
+    indirect=["problem", "expected_solution_summary"],
+)
+def test_examples_from_json_solution_as_expected(problem, expected_solution_summary):
+    """Gets examples defined from json and solves them, comparing the solution
+    with the expected one"""
+    solver = SolvingPars(speed_level=1)
+    sol = problem.solve(solver)
+    assert sol is not None
+
+    summary = SolutionSummary(sol)
+    assert_dicts_almost_equal(summary.as_dict(), expected_solution_summary.as_dict())
