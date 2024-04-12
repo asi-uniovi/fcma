@@ -115,7 +115,7 @@ m6g_large = InstanceClass(
     name="m6g.large",
     price=CurrencyPerTime("0.086 usd/hour"),
     cores=ComputationalUnits("1 cores"),
-    mem=Storage("4 gibibytes"),
+    mem=Storage("8 gibibytes"),
     family=m6g_fm,
 )
 m6g_xlarge = m6g_large.mul(2, "m6g.xlarge")
@@ -130,7 +130,7 @@ r6g_large = InstanceClass(
     name="r6g.large",
     price=CurrencyPerTime("0.1128 usd/hour"),
     cores=ComputationalUnits("1 cores"),
-    mem=Storage("4 gibibytes"),
+    mem=Storage("16 gibibytes"),
     family=r6g_fm,
 )
 r6g_xlarge = r6g_large.mul(2, "r6g.xlarge")
