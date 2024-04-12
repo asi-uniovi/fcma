@@ -749,7 +749,7 @@ class Fcma:
                 if n_containers == 0:
                     break
             if n_containers == 0:
-                continue  # Allocation of containers in the instance class cc has ended
+                continue  # Allocation of containers in the container class has ended
 
             # -------------------- (3) --------------------
             # We did our best to fulfill the SFMPL of each application without increasing cost, but cost is
