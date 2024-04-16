@@ -8,6 +8,7 @@ from fcma.model import SolutionSummary
 import aws_eu_west_1
 from fcma import App, AppFamilyPerf, System, Fcma, SolvingPars
 from fcma.visualization import SolutionPrinter
+from pulp import PULP_CBC_CMD
 import sys
 
 # Set logging level
@@ -93,7 +94,9 @@ fcma_problem = Fcma(system, workloads=workloads)
 #             solver = PULP_CBC_CMD(timeLimit=10, gapRel=0.01, threads=8)
 #             solving_pars = SolvingPars(speed_level=1, solver=solver)
 # More information can be found on: https://coin-or.github.io/pulp/technical/solvers.html
-solving_pars = SolvingPars(speed_level=1)
+gap_rel = 0.05
+solver = PULP_CBC_CMD(msg=0, gapRel=gap_rel)
+solving_pars = SolvingPars(speed_level=1, solver=solver)
 
 # Solve the allocation problem
 solution = fcma_problem.solve(solving_pars)

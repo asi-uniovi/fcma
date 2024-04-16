@@ -30,7 +30,7 @@ perf_ref_file = f"{perf_file_prefix}-0.csv"
 
 repetitions = 1  # Number of repetitions to get average times
 
-gap_rel = 0.02  # Maximum relative gap between enay ILP solution and the optimal
+gap_rel = 0.05  # Maximum relative gap between any ILP solution and the optimal
 solver = PULP_CBC_CMD(msg=0, gapRel=gap_rel)
 
 csv_label_row = [
@@ -38,7 +38,8 @@ csv_label_row = [
     "speed_level",
     "cost($/hour)",
     "cost/lower_bound",
-    "time(sec)",
+    "prealloc_time(sec)",
+    "total_time(sec)",
     "relative_cost",
     "relative_time",
     "comment",
@@ -99,6 +100,12 @@ def get_perf_data(
     else:
         total_data["cost/lower_bound"] += cost_to_lower_bound
 
+    perf_data.append(f"{sol.statistics.pre_allocation_seconds:.4f}")
+    if "prealloc_time(sec)" not in total_data:
+        total_data["prealloc_time(sec)"] = sol.statistics.pre_allocation_seconds
+    else:
+        total_data["prealloc_time(sec)"] += sol.statistics.pre_allocation_seconds
+
     perf_data.append(f"{sol.statistics.total_seconds:.4f}")
     if "time(sec)" not in total_data:
         total_data["time(sec)"] = sol.statistics.total_seconds
@@ -124,7 +131,16 @@ def get_perf_data(
         else:
             total_data["relative_cost"] += relative_cost
 
-        relative_time = sol.statistics.total_seconds / float(perf_ref_data["time(sec)"])
+        relative_prealloc_time = sol.statistics.pre_allocation_seconds / float(
+            perf_ref_data["prealloc_time(sec)"]
+        )
+        perf_data.append(f"{relative_prealloc_time:.4f}")
+        if "relative_prealloc_time" not in total_data:
+            total_data["relative_prealloc_time"] = relative_prealloc_time
+        else:
+            total_data["relative_prealloc_time"] += relative_prealloc_time
+
+        relative_time = sol.statistics.total_seconds / float(perf_ref_data["total_time(sec)"])
         perf_data.append(f"{relative_time:.4f}")
         if "relative_time" not in total_data:
             total_data["relative_time"] = relative_time
@@ -191,6 +207,7 @@ with open(perf_path, "w", newline="") as csv_file:
                 speed_level,
                 f'{total_data[speed_level]["cost($/hour)"]:.4f}',
                 f'{total_data[speed_level]["cost/lower_bound"] / total_data[speed_level]["n"]:.4f}',
+                f'{total_data[speed_level]["prealloc_time(sec)"]:.4f}',
                 f'{total_data[speed_level]["time(sec)"]:.4f}',
                 f'{total_data[speed_level]["relative_cost"] / total_data[speed_level]["n"]:.4f}',
                 f'{total_data[speed_level]["relative_time"] / total_data[speed_level]["n"]:.4f}',

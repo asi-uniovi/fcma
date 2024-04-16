@@ -994,6 +994,9 @@ class Fcma:
         # Reset virtual machine indexes
         Vm.reset_ids()
 
+        # Remove virtual machines coming from any previous problem solution
+        self._vms = {}
+
         start_solving_time = current_time()
         self._solving_stats = SolvingStats()
         self._solving_pars = solving_pars
