@@ -30,7 +30,7 @@ perf_ref_file = f"{perf_file_prefix}-0.csv"
 
 repetitions = 1  # Number of repetitions to get average times
 
-gap_rel = 0.05  # Maximum relative gap between any ILP solution and the optimal
+gap_rel = 0.02  # Maximum relative gap between any ILP solution and the optimal
 solver = PULP_CBC_CMD(msg=0, gapRel=gap_rel)
 
 csv_label_row = [
