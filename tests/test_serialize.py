@@ -59,13 +59,19 @@ def test_example_as_dict_and_back_solution_matches(example_data):
 
 
 cases_to_test = []
-for i in range(1,5):
+for i in range(1, 5):
     pars = (f"example{i}_problem", f"example{i}_solution_speed_1")
-    if i==3:
-        cases_to_test.append(pytest.param(*pars, marks=pytest.mark.skip(reason="Example3 is known to fail, skipping it until fixed")))
+    if i == 3:
+        cases_to_test.append(
+            pytest.param(
+                *pars,
+                marks=pytest.mark.skip(reason="Example3 is known to fail, skipping it until fixed"),
+            )
+        )
     else:
         cases_to_test.append(pytest.param(*pars))
- 
+
+
 @pytest.mark.parametrize(
     "problem, expected_solution_summary",
     cases_to_test,
