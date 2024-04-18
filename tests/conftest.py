@@ -6,6 +6,7 @@ import importlib.util
 from pathlib import Path
 import json
 import pytest
+from pulp import PULP_CBC_CMD
 from fcma import System, App, RequestsPerTime, SolvingPars, Fcma, Solution, SolutionSummary
 from fcma.serialization import ProblemSerializer
 
@@ -40,7 +41,9 @@ def example_solving_pars(request) -> SolvingPars:
 
     It returns a tuple with the requested speed and the SolvingPars object"""
     speed = request.param
-    solving_pars = SolvingPars(speed_level=speed)
+    gap_rel = 0.05
+    solver = PULP_CBC_CMD(msg=0, gapRel=gap_rel)
+    solving_pars = SolvingPars(speed_level=speed, solver=solver)
     return speed, solving_pars
 
 

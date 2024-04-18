@@ -2,23 +2,23 @@
   "vms": {
     "vms": [
       {
-        "ic_name": "c5.24xlarge",
-        "total_num": 23,
-        "cost": 105.98400000000007
+        "ic_name": "m5.12xlarge",
+        "total_num": 1,
+        "cost": 2.568
       },
       {
         "ic_name": "m5.24xlarge",
-        "total_num": 3,
-        "cost": 15.408000000000001
+        "total_num": 5,
+        "cost": 25.68
       },
       {
-        "ic_name": "c5.9xlarge",
-        "total_num": 1,
-        "cost": 1.728
+        "ic_name": "m5.18xlarge",
+        "total_num": 21,
+        "cost": 80.892
       }
     ],
     "total_num": 27,
-    "total_cost": 123.12000000000005
+    "total_cost": 109.13999999999999
   },
   "apps": {
     "app_0": {
@@ -26,7 +26,23 @@
       "container_groups": [
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[21]",
+          "vm_name": "m5.12xlarge[0]",
+          "app_name": "app_0",
+          "performance": 0.007359999999999999,
+          "replicas": 2,
+          "cores": 6900.0
+        },
+        {
+          "container_name": "app_0-c5_m5_r5",
+          "vm_name": "m5.12xlarge[0]",
+          "app_name": "app_0",
+          "performance": 0.0036799999999999997,
+          "replicas": 1,
+          "cores": 3450.0
+        },
+        {
+          "container_name": "app_0-c5_m5_r5",
+          "vm_name": "m5.24xlarge[4]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -34,7 +50,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[22]",
+          "vm_name": "m5.18xlarge[1]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -42,7 +58,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[17]",
+          "vm_name": "m5.18xlarge[2]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -50,7 +66,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[18]",
+          "vm_name": "m5.18xlarge[3]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -58,7 +74,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[19]",
+          "vm_name": "m5.18xlarge[4]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -66,7 +82,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[20]",
+          "vm_name": "m5.18xlarge[5]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -74,7 +90,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[0]",
+          "vm_name": "m5.18xlarge[6]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -82,7 +98,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[1]",
+          "vm_name": "m5.18xlarge[7]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -90,7 +106,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[2]",
+          "vm_name": "m5.18xlarge[8]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -98,7 +114,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[3]",
+          "vm_name": "m5.18xlarge[9]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -106,7 +122,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[4]",
+          "vm_name": "m5.18xlarge[10]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -114,7 +130,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[5]",
+          "vm_name": "m5.18xlarge[11]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -122,7 +138,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[6]",
+          "vm_name": "m5.18xlarge[12]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -130,7 +146,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[7]",
+          "vm_name": "m5.18xlarge[13]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -138,7 +154,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[8]",
+          "vm_name": "m5.18xlarge[14]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -146,7 +162,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[9]",
+          "vm_name": "m5.18xlarge[15]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -154,7 +170,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[10]",
+          "vm_name": "m5.18xlarge[16]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -162,7 +178,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[11]",
+          "vm_name": "m5.18xlarge[17]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -170,7 +186,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[12]",
+          "vm_name": "m5.18xlarge[18]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -178,7 +194,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[13]",
+          "vm_name": "m5.18xlarge[19]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -186,7 +202,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[14]",
+          "vm_name": "m5.18xlarge[20]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -194,15 +210,7 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[15]",
-          "app_name": "app_0",
-          "performance": 0.007359999999999999,
-          "replicas": 5,
-          "cores": 6900.0
-        },
-        {
-          "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.24xlarge[16]",
+          "vm_name": "m5.18xlarge[21]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
           "replicas": 5,
@@ -245,7 +253,7 @@
           "vm_name": "m5.24xlarge[2]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
-          "replicas": 6,
+          "replicas": 5,
           "cores": 6900.0
         },
         {
@@ -258,19 +266,11 @@
         },
         {
           "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.9xlarge[2]",
+          "vm_name": "m5.24xlarge[3]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
-          "replicas": 1,
+          "replicas": 5,
           "cores": 6900.0
-        },
-        {
-          "container_name": "app_0-c5_m5_r5",
-          "vm_name": "c5.9xlarge[2]",
-          "app_name": "app_0",
-          "performance": 0.0036799999999999997,
-          "replicas": 1,
-          "cores": 3450.0
         }
       ],
       "total_replicas": 138,
@@ -281,7 +281,7 @@
       "container_groups": [
         {
           "container_name": "app_1-c5_m5_r5",
-          "vm_name": "c5.24xlarge[21]",
+          "vm_name": "m5.12xlarge[0]",
           "app_name": "app_1",
           "performance": 0.12,
           "replicas": 1,
@@ -289,7 +289,39 @@
         },
         {
           "container_name": "app_1-c5_m5_r5",
-          "vm_name": "c5.24xlarge[22]",
+          "vm_name": "m5.24xlarge[4]",
+          "app_name": "app_1",
+          "performance": 0.12,
+          "replicas": 2,
+          "cores": 5400.0
+        },
+        {
+          "container_name": "app_1-c5_m5_r5",
+          "vm_name": "m5.24xlarge[4]",
+          "app_name": "app_1",
+          "performance": 0.06,
+          "replicas": 1,
+          "cores": 2700.0
+        },
+        {
+          "container_name": "app_1-c5_m5_r5",
+          "vm_name": "m5.24xlarge[0]",
+          "app_name": "app_1",
+          "performance": 0.06,
+          "replicas": 1,
+          "cores": 2700.0
+        },
+        {
+          "container_name": "app_1-c5_m5_r5",
+          "vm_name": "m5.24xlarge[1]",
+          "app_name": "app_1",
+          "performance": 0.06,
+          "replicas": 1,
+          "cores": 2700.0
+        },
+        {
+          "container_name": "app_1-c5_m5_r5",
+          "vm_name": "m5.24xlarge[2]",
           "app_name": "app_1",
           "performance": 0.12,
           "replicas": 1,
@@ -297,62 +329,30 @@
         },
         {
           "container_name": "app_1-c5_m5_r5",
-          "vm_name": "c5.24xlarge[17]",
+          "vm_name": "m5.24xlarge[2]",
+          "app_name": "app_1",
+          "performance": 0.06,
+          "replicas": 1,
+          "cores": 2700.0
+        },
+        {
+          "container_name": "app_1-c5_m5_r5",
+          "vm_name": "m5.24xlarge[3]",
           "app_name": "app_1",
           "performance": 0.12,
-          "replicas": 1,
+          "replicas": 2,
           "cores": 5400.0
         },
         {
           "container_name": "app_1-c5_m5_r5",
-          "vm_name": "c5.24xlarge[18]",
-          "app_name": "app_1",
-          "performance": 0.12,
-          "replicas": 1,
-          "cores": 5400.0
-        },
-        {
-          "container_name": "app_1-c5_m5_r5",
-          "vm_name": "c5.24xlarge[19]",
-          "app_name": "app_1",
-          "performance": 0.12,
-          "replicas": 1,
-          "cores": 5400.0
-        },
-        {
-          "container_name": "app_1-c5_m5_r5",
-          "vm_name": "c5.24xlarge[20]",
-          "app_name": "app_1",
-          "performance": 0.12,
-          "replicas": 1,
-          "cores": 5400.0
-        },
-        {
-          "container_name": "app_1-c5_m5_r5",
-          "vm_name": "c5.24xlarge[0]",
-          "app_name": "app_1",
-          "performance": 0.12,
-          "replicas": 1,
-          "cores": 5400.0
-        },
-        {
-          "container_name": "app_1-c5_m5_r5",
-          "vm_name": "c5.24xlarge[1]",
-          "app_name": "app_1",
-          "performance": 0.12,
-          "replicas": 1,
-          "cores": 5400.0
-        },
-        {
-          "container_name": "app_1-c5_m5_r5",
-          "vm_name": "c5.24xlarge[2]",
+          "vm_name": "m5.24xlarge[3]",
           "app_name": "app_1",
           "performance": 0.06,
           "replicas": 1,
           "cores": 2700.0
         }
       ],
-      "total_replicas": 9,
+      "total_replicas": 11,
       "total_perf": 1.02
     }
   },

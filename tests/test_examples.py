@@ -87,26 +87,10 @@ def test_example_solution_check_allocation_is_valid(example_solution):
 # Check solutions of examples, for all examples and speeds
 # ==============================================================================
 
-cases_to_run = []
-for case in cases_with_solutions:
-    if (
-        case[0] == example3   #  pylint: disable=comparison-with-callable
-    ):  # This case is known to fail, mark it.
-        cases_to_run.append(
-            pytest.param(
-                *case,
-                marks=pytest.mark.skip(
-                    reason="Example 3 is known to fail, skipping it until fixed"
-                ),
-            )
-        )
-    else:
-        cases_to_run.append(pytest.param(*case))
-
 
 @pytest.mark.parametrize(
     "example_data, example_solving_pars, expected_solution_summary",
-    cases_to_run,
+    cases_with_solutions,
     indirect=["example_data", "example_solving_pars", "expected_solution_summary"],
 )
 def test_example_solution_summary_vms(example_solution, expected_solution_summary):
@@ -116,12 +100,18 @@ def test_example_solution_summary_vms(example_solution, expected_solution_summar
     summary = SolutionSummary(solution)
     vm_alloc = summary.get_vm_summary()
     expected_vm_alloc = expected_solution_summary.get_vm_summary()
+    solution_cost = vm_alloc.total_cost.m_as("usd/h")
+    expected_cost = expected_vm_alloc.total_cost.m_as("usd/h")
+    comparison = "lower" if solution_cost < expected_cost else "higher"
+    assert (
+        pytest.approx(solution_cost) == expected_cost
+    ), f"Solution cost is {comparison} than expected"
     assert vm_alloc == expected_vm_alloc
 
 
 @pytest.mark.parametrize(
     "example_data, example_solving_pars, expected_solution_summary",
-    cases_to_run,
+    cases_with_solutions,
     indirect=["example_data", "example_solving_pars", "expected_solution_summary"],
 )
 def test_example_solution_summary_all_apps(example_solution, expected_solution_summary):
@@ -131,7 +121,7 @@ def test_example_solution_summary_all_apps(example_solution, expected_solution_s
     summary = SolutionSummary(solution)
     app_alloc = summary.get_all_apps_allocations()
     expected_app_alloc = expected_solution_summary.get_all_apps_allocations()
-    assert app_alloc == expected_app_alloc
+    assert app_alloc == expected_app_alloc, "Apps allocation different from expected"
 
 
 # No need to test all cases for this, as the previous tests already check the contents
@@ -147,7 +137,7 @@ def test_example_solution_summary_single_app(example_solution, expected_solution
     expected_allocation = expected_solution_summary.get_all_apps_allocations()
     for app in expected_allocation:
         info = summary.get_app_allocation_summary(app)
-        assert info == expected_allocation[app]
+        assert info == expected_allocation[app], "App allocation different from expected"
 
 
 # # # print("\n----------- Solution check --------------")
