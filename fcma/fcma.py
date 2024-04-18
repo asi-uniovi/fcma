@@ -749,7 +749,7 @@ class Fcma:
                 if n_containers == 0:
                     break
             if n_containers == 0:
-                continue  # Allocation of containers in the instance class cc has ended
+                continue  # Allocation of containers in the container class has ended
 
             # -------------------- (3) --------------------
             # We did our best to fulfill the SFMPL of each application without increasing cost, but cost is
@@ -993,6 +993,9 @@ class Fcma:
 
         # Reset virtual machine indexes
         Vm.reset_ids()
+
+        # Remove virtual machines coming from any previous problem solution
+        self._vms = {}
 
         start_solving_time = current_time()
         self._solving_stats = SolvingStats()

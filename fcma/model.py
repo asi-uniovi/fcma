@@ -9,6 +9,7 @@ from dataclasses import asdict, dataclass
 from enum import Enum
 from itertools import chain
 from math import floor
+from functools import lru_cache
 import pulp
 from pulp import PULP_CBC_CMD
 from cloudmodel.unified.units import (
@@ -306,6 +307,44 @@ class InstanceClass:
             return True
         return False
 
+    @staticmethod
+    def _get_parent_families(fm: InstanceClassFamily) -> list[InstanceClassFamily]:
+        """
+        Get a list with all the parent families of a given family.
+        :param fm: A family to get parent families.
+        :return: A list with all the parent families.
+        """
+        fms = copy.copy(fm.parent_fms)
+        for parent_fm in fm.parent_fms:
+            fms.extend(InstanceClass._get_parent_families(parent_fm))
+        return list(set(fms))
+
+    @staticmethod
+    @lru_cache
+    def get_promotion_ics(ic: InstanceClass) -> list[InstanceClass]:
+        """
+        Get a sorted list by increasing price with all the instance classes in the
+        same family or parent families with a higher than or equal number of
+        cores and a higher than or equal memory.
+        :param ic: Instance class to be promoted.
+        :return: A list with promotion instance classes sorted by increasing price.
+        """
+        fms = [ic.family]
+        fms.extend(InstanceClass._get_parent_families(ic.family))
+        ics = []
+        for fm in fms:
+            ics.extend(fm.ics)
+        ics = list(set(ics))
+        ics.remove(ic)
+
+        # Remove instance classes with less memory or cores than the current one
+        ics = [ic for ic in ics if ic.cores >= ic.cores and ic.mem >= ic.mem]
+
+        # Sort instance classes by increasing price
+        ics.sort(key=lambda final_ic: final_ic.price)
+
+        return ics
+
 
 class InstanceClassFamily:
     """
@@ -484,12 +523,16 @@ class ContainerClass:
                         break
         return res
 
+    @lru_cache
     def get_mem_from_aggregations(self, replicas: int) -> Storage:
         """
         Get the memory that would require an aggregation made of several replicas.
         :param replicas: The number of container replicas.
         :return: The memory required if the replicas were aggregated.
         """
+
+        if replicas == 0:
+            return Storage("0 gibibytes")
 
         # Firstly, get the aggregations for the given number of replicas
         n_aggs = self.get_aggregations(replicas)
@@ -619,7 +662,15 @@ class Vm:
 
         if self.free_cores + DELTA_CPU < replicas * cc.cores:
             return False
-        if self.free_mem + DELTA_MEM < cc.get_mem_from_aggregations(replicas):
+        cgs = self.get_container_groups(cc)
+        if len(cgs) > 0:
+            prev_replicas = cgs[0].replicas
+        else:
+            prev_replicas = 0
+        mem_inc = cc.get_mem_from_aggregations(
+            prev_replicas + replicas
+        ) - cc.get_mem_from_aggregations(prev_replicas)
+        if self.free_mem + DELTA_MEM < mem_inc:
             return False
         return True
 
@@ -633,26 +684,34 @@ class Vm:
 
         # Get the number of replicas considering only CPU requirements
         n_from_cpu = floor((self.free_cores + DELTA_CPU) / cc.cores)
+        if n_from_cpu == 0:
+            return 0
 
         # We assume that memory requirements per core decreases as aggregation increases, so the
-        # greater the container aggregation, the lower the memory requested.
-        # The maximum number of replicas comes from the maximum number of replicas with the highest
-        # aggregation levels.
+        # greater the container aggregation, the lower the memory per core requested. Thus, the
+        # maximum number of replicas comes from the highest aggregation levels.
         # For example, for agg = 1, 2, 4 and memory values 10, 11, 13, respectively, the maximum
-        # comes from container with aggregation level 4. If there is more memory free then continue
-        # with the previous aggregation level, i.e, 2, and so on
-        free_mem = self.free_mem
-        n_from_mem = 0
-        last_agg_index = len(cc.mem) - 1
-        while free_mem + DELTA_MEM >= cc.mem[last_agg_index]:
-            n_add_replicas = int(floor((free_mem + DELTA_MEM) / cc.mem[last_agg_index]))
-            n_from_mem += n_add_replicas * cc.aggs[last_agg_index]
-            if n_from_mem > n_from_cpu:
-                return n_from_cpu
-            free_mem -= n_add_replicas * cc.mem[last_agg_index]
-            last_agg_index -= 1
+        # comes from containers that will aggregate to level 4. If there is more memory free, then continue
+        # with the previous aggregation level, i.e, 2, and so on.
 
-        return n_from_mem
+        # Firstly, get the number of replicas of the cc previously allocated and the memory they request.
+        cgs = self.get_container_groups(cc)
+        if len(cgs) == 0:
+            initial_replicas = 0
+        else:
+            initial_replicas = cgs[0].replicas
+        free_mem = self.free_mem + cc.get_mem_from_aggregations(initial_replicas)
+
+        agg_index = len(cc.mem) - 1
+        total_replicas = 0  # Total number of cc replicas
+        while agg_index >= 0:
+            n_containers = floor((free_mem + DELTA_MEM) / cc.mem[agg_index])
+            total_replicas += n_containers * cc.aggs[agg_index]
+            free_mem -= n_containers * cc.mem[agg_index]
+            if total_replicas - initial_replicas >= n_from_cpu:
+                return n_from_cpu
+            agg_index -= 1
+        return total_replicas - initial_replicas
 
     def get_container_groups(self, cc: ContainerClass) -> list[ContainerGroup]:
         """
@@ -730,18 +789,7 @@ class Vm:
 
         return n_allocatable_replicas
 
-    @staticmethod
-    def _get_parent_families(fm: InstanceClassFamily) -> list[InstanceClassFamily]:
-        """
-        Get a list with all the parent families of a given family.
-        :param fm: A family to get parent families.
-        :return: A list with all the parent families.
-        """
-        fms = copy.copy(fm.parent_fms)
-        for parent_fm in fm.parent_fms:
-            fms.extend(Vm._get_parent_families(parent_fm))
-        return list(set(fms))
-
+    @lru_cache(maxsize=16536)
     def cheapest_ic_promotion(self, cc: ContainerClass) -> InstanceClass:
         """
         Find the cheapest instance class in the same family with enough number cores and memory to
@@ -750,21 +798,7 @@ class Vm:
         :return: The cheapest instance class or None if there is no instance class able to allocate all the containers.
         """
 
-        # Get a list with all the instance classes in the same family or parent families,
-        # except the instance class of the virtual machine
-        fms = [self.ic.family]
-        fms.extend(Vm._get_parent_families(self.ic.family))
-        ics = []
-        for fm in fms:
-            ics.extend(fm.ics)
-        ics = list(set(ics))
-        ics.remove(self.ic)
-
-        # Remove instance classes with less memory or cores than the current one
-        ics = [ic for ic in ics if ic.cores >= self.ic.cores and ic.mem >= self.ic.mem]
-
-        # Sort instance classes by increasing price
-        ics.sort(key=lambda ic: ic.price)
+        ics = InstanceClass.get_promotion_ics(self.ic)
 
         for ic in ics:
             # Check if there are enough cores for 1 container
@@ -779,7 +813,9 @@ class Vm:
                 if cg.cc == cc:
                     replicas = cg.replicas
                     break
-            mem_inc = cc.get_mem_from_aggregations(replicas+1) - cc.get_mem_from_aggregations(replicas)
+            mem_inc = cc.get_mem_from_aggregations(replicas + 1) - cc.get_mem_from_aggregations(
+                replicas
+            )
             if free_mem + DELTA_MEM > mem_inc:
                 return ic
         return None

@@ -115,7 +115,7 @@ m6g_large = InstanceClass(
     name="m6g.large",
     price=CurrencyPerTime("0.086 usd/hour"),
     cores=ComputationalUnits("1 cores"),
-    mem=Storage("4 gibibytes"),
+    mem=Storage("8 gibibytes"),
     family=m6g_fm,
 )
 m6g_xlarge = m6g_large.mul(2, "m6g.xlarge")
@@ -130,7 +130,7 @@ r6g_large = InstanceClass(
     name="r6g.large",
     price=CurrencyPerTime("0.1128 usd/hour"),
     cores=ComputationalUnits("1 cores"),
-    mem=Storage("4 gibibytes"),
+    mem=Storage("16 gibibytes"),
     family=r6g_fm,
 )
 r6g_xlarge = r6g_large.mul(2, "r6g.xlarge")
@@ -151,8 +151,9 @@ c6i_large = InstanceClass(
 c6i_xlarge = c6i_large.mul(2, "c6i.xlarge")
 c6i_2xlarge = c6i_xlarge.mul(2, "c6i.2xlarge")
 c6i_4xlarge = c6i_xlarge.mul(4, "c6i.4xlarge")
+c6i_8xlarge = c6i_xlarge.mul(8, "c6i.8xlarge")
 c6i_12xlarge = c6i_xlarge.mul(12, "c6i.12xlarge")
-c6i_18xlarge = c6i_xlarge.mul(18, "c6i.18xlarge")
+c6i_16xlarge = c6i_xlarge.mul(16, "c6i.16xlarge")
 c6i_24xlarge = c6i_xlarge.mul(24, "c6i.24xlarge")
 c6i_32xlarge = c6i_xlarge.mul(32, "c6i.32xlarge")
 
@@ -184,6 +185,7 @@ r6i_2xlarge = r6i_xlarge.mul(2, "r6i.2xlarge")
 r6i_4xlarge = r6i_xlarge.mul(4, "r6i.4xlarge")
 r6i_8xlarge = r6i_xlarge.mul(8, "r6i.8xlarge")
 r6i_12xlarge = r6i_xlarge.mul(12, "r6i.12xlarge")
+r6i_16xlarge = r6i_xlarge.mul(12, "r6i.16xlarge")
 r6i_24xlarge = r6i_xlarge.mul(24, "r6i.24xlarge")
 r6i_32xlarge = r6i_xlarge.mul(32, "r6i.32xlarge")
 

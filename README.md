@@ -249,10 +249,12 @@ fcma_problem = Fcma(system, workloads=workloads)
 ```
 **7. Optionally, create the solver parameters.**
 ```python
-solving_pars = SolvingPars(speed_level=1)
+gap_rel = 0.05
+solver = PULP_CBC_CMD(msg=0, gapRel=gap_rel)
+solving_pars = SolvingPars(speed_level=1, solver=solver)
 ```
 Three different solvers are implemented in FCMA:
-- _speed_level=1_. Default solver. It is the slowest solver, but the one giving the 
+- _speed_level=1_. Default solver. It is the slowest solver, but the one giving in general the 
 best cost.
 - _speed_level=2_. Intermediate speed solver, giving also and intermediate cost.
 - _speed_level=3_. The fastest solver, but the one giving the worst cost results.
@@ -260,6 +262,11 @@ best cost.
 The other parameter of the solver, _solver_, is an optional parameter that configures
 the ILP solver for speed levels 1 and 2. More information about solvers can be found in 
 [PuLP solvers](https://coin-or.github.io/pulp/technical/solvers.html).
+
+_gapRel=0.05_ defines a measure of how close the solution is to the optimal solution 
+of an ILP problem. The higher the value the shortest the solving time, but the higher cost. 
+CBC solver with _gapRel_ in range [0.02, 0.05] proved to be suitable in practice, 
+giving solutions optimal or very close to the optimal.
 
 All the solvers work in two phases:
 - Pre-allocation phase. This phase is different for each solver. The solver selected
