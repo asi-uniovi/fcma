@@ -241,97 +241,97 @@
       },
       "m6g.large": {
         "cores": 1000.0,
-        "mem": 4,
+        "mem": 8,
         "price": 0.086,
         "family": "m6g"
       },
       "m6g.xlarge": {
         "cores": 2000.0,
-        "mem": 8,
+        "mem": 16,
         "price": 0.172,
         "family": "m6g"
       },
       "m6g.2xlarge": {
         "cores": 4000.0,
-        "mem": 16,
+        "mem": 32,
         "price": 0.344,
         "family": "m6g"
       },
       "m6g.4xlarge": {
         "cores": 8000.0,
-        "mem": 32,
+        "mem": 64,
         "price": 0.688,
         "family": "m6g"
       },
       "m6g.9xlarge": {
         "cores": 18000.0,
-        "mem": 72,
+        "mem": 144,
         "price": 1.5479999999999998,
         "family": "m6g"
       },
       "m6g.12xlarge": {
         "cores": 24000.0,
-        "mem": 96,
+        "mem": 192,
         "price": 2.064,
         "family": "m6g"
       },
       "m6g.18xlarge": {
         "cores": 36000.0,
-        "mem": 144,
+        "mem": 288,
         "price": 3.0959999999999996,
         "family": "m6g"
       },
       "m6g.24xlarge": {
         "cores": 48000.0,
-        "mem": 192,
+        "mem": 384,
         "price": 4.128,
         "family": "m6g"
       },
       "r6g.large": {
         "cores": 1000.0,
-        "mem": 4,
+        "mem": 16,
         "price": 0.1128,
         "family": "r6g"
       },
       "r6g.xlarge": {
         "cores": 2000.0,
-        "mem": 8,
+        "mem": 32,
         "price": 0.2256,
         "family": "r6g"
       },
       "r6g.2xlarge": {
         "cores": 4000.0,
-        "mem": 16,
+        "mem": 64,
         "price": 0.4512,
         "family": "r6g"
       },
       "r6g.4xlarge": {
         "cores": 8000.0,
-        "mem": 32,
+        "mem": 128,
         "price": 0.9024,
         "family": "r6g"
       },
       "r6g.9xlarge": {
         "cores": 18000.0,
-        "mem": 72,
+        "mem": 288,
         "price": 2.0303999999999998,
         "family": "r6g"
       },
       "r6g.12xlarge": {
         "cores": 24000.0,
-        "mem": 96,
+        "mem": 384,
         "price": 2.7072,
         "family": "r6g"
       },
       "r6g.18xlarge": {
         "cores": 36000.0,
-        "mem": 144,
+        "mem": 576,
         "price": 4.0607999999999995,
         "family": "r6g"
       },
       "r6g.24xlarge": {
         "cores": 48000.0,
-        "mem": 192,
+        "mem": 768,
         "price": 5.4144,
         "family": "r6g"
       }

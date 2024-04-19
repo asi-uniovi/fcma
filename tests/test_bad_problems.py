@@ -56,8 +56,8 @@ def test_workload_bad_keys_is_rejected(aws_eu_west_1):
 def test_empty_workload_and_system_is_rejected():
     """A problem with non-apps as keys in workload is rejected"""
     # Workload keys are not apps
-    workloads = dict()
-    system = dict()
+    workloads = {}
+    system = {}
     with pytest.raises(ValueError) as excinfo:
         Fcma(system, workloads)
     assert "At least one application is required" in str(excinfo.value)
