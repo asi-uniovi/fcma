@@ -1,6 +1,7 @@
 """Test for the ProblemSerializer class"""
 
 import pytest
+from pulp import PULP_CBC_CMD
 from fcma import SolutionSummary, Fcma, SolvingPars
 from fcma.serialization import ProblemSerializer
 from .examples import example1, example2, example3, example4
@@ -61,15 +62,7 @@ def test_example_as_dict_and_back_solution_matches(example_data):
 cases_to_test = []
 for i in range(1, 5):
     pars = (f"example{i}_problem", f"example{i}_solution_speed_1")
-    if i == 3:
-        cases_to_test.append(
-            pytest.param(
-                *pars,
-                marks=pytest.mark.skip(reason="Example3 is known to fail, skipping it until fixed"),
-            )
-        )
-    else:
-        cases_to_test.append(pytest.param(*pars))
+    cases_to_test.append(pytest.param(*pars))
 
 
 @pytest.mark.parametrize(
@@ -80,8 +73,10 @@ for i in range(1, 5):
 def test_examples_from_json_solution_as_expected(problem, expected_solution_summary):
     """Gets examples defined from json and solves them, comparing the solution
     with the expected one"""
-    solver = SolvingPars(speed_level=1)
-    sol = problem.solve(solver)
+    gap_rel = 0.05
+    solver = PULP_CBC_CMD(msg=0, gapRel=gap_rel)
+    solving_pars = SolvingPars(speed_level=1, solver=solver)
+    sol = problem.solve(solving_pars)
     assert sol is not None
 
     summary = SolutionSummary(sol)
