@@ -30,7 +30,7 @@ perf_ref_file = f"{perf_file_prefix}-0.csv"
 
 repetitions = 1  # Number of repetitions to get average times
 
-gap_rel = 0.02  # Maximum relative gap between any ILP solution and the optimal
+gap_rel = 0.05  # Maximum relative gap between any ILP solution and the optimal
 solver = PULP_CBC_CMD(msg=0, gapRel=gap_rel)
 
 csv_label_row = [
@@ -184,11 +184,12 @@ with open(perf_path, "w", newline="") as csv_file:
                     avg_time += solution.statistics.total_seconds
                 solution.statistics.total_seconds = avg_time / repetitions
                 if speed_level == 1:
-                    lower_bound = solution.statistics.pre_allocation_cost.magnitude
-                    if solution.statistics.pre_allocation_status == FcmaStatus.FEASIBLE:
-                        lower_bound *= 1.0 + gap_rel
-                    elif solution.statistics.pre_allocation_status == FcmaStatus.INVALID:
+                    if solution.statistics.pre_allocation_status == FcmaStatus.INVALID:
                         lower_bound = None
+                    else:
+                        lower_bound = solution.statistics.pre_allocation_cost.magnitude
+                        if gap_rel > 0:
+                            lower_bound *= (1.0 + gap_rel)
                 reference_data = {}
                 if (json_file_name, str(speed_level)) in perf_ref_data:
                     reference_data = perf_ref_data[(json_file_name, str(speed_level))]

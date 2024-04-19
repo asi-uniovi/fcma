@@ -324,13 +324,15 @@ in terms of cost.
 is valid only for _speed_level=1_ and is included in _pre_allocation_seconds_ in that case.
 - _pre_allocation_status_. The status previous to the solution. It may be OPTIMAL, FEASIBLE or
 INVALID. It will never be OPTIMAL for _speed_level=2_ or _speed_level=3_ since with these solvers
-the optimality can not be guaranteed.
+the optimality can not be guaranteed. In addition, solutions marked as optimal for _speed_level=1_ 
+may only be feasible when the ILP solver is configured with _gapRel_ higher than 0.
 - _final_status_. The solution status, after the allocation phase. It may be OPTIMAL, FEASIBLE or
 INVALID, but never be better than _pre_allocation_status_. A FEASIBLE solution is worse than an 
 OPTIMAL solution because altough being valid, can not be guaranteed to be the lowest cost.
 - _partial_ilp_status_. The status of the partial ILP problem, which is the key algorithm inside the
 pre-allocation base with _speed_level=1_. This solver executes a node aggregation algorithm after solving
 the partial ILP problem, so this status does not have to match with _pre_allocation_status_.
+
 
 **9. Optionally, print the results on a terminal.** 
 It is possible to print all the results: virtual machines, containers and statistics with method _print_()
