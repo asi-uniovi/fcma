@@ -832,10 +832,10 @@ class FamilyClassAggPars:
     # Instance class cores
     ic_cores: tuple[int]
     # Number of aggregation paths for every instance class name. The same length as ic_names
-    n_agg: tuple[int, ...]
+    p_agg: tuple[int, ...]
     # Number of nodes lost for every tuple (large ic index, aggregation path index, small ic index).
     # Instance class indexes come from the index in ic_names.
-    p_agg: dict[tuple[int, int, int], int]
+    v_agg: dict[tuple[int, int, int], int]
 
 
 @dataclass(frozen=True)
@@ -891,6 +891,103 @@ class SolvingStats:
 
     # Total seconds = pre_allocation_seconds + allocation_seconds
     total_seconds: None | float = None
+
+    # Metrics for secondary optimization objectives
+    sfmpl_m: None | float = None
+    container_isolation_m: None | float = None
+    vm_recyclyng_m: None | float = None
+
+    def _update_sfmpl_metric(self, alloc: Allocation) -> None:
+        """
+        Update the SFMPL metric from the problem solution.
+        :param alloc: The allocation for the current problem solution.
+        """
+        apps = {}
+        for fm in alloc:
+            for node in alloc[fm]:
+                app_perf_in_node = {}
+                for cg in node.cgs:
+                    cc = cg.cc
+                    app = cc.app
+                    perf = cc.perf * cg.replicas
+                    if app not in apps:
+                        apps[app] = {"sfmpl_expected": app.sfmpl, "perfs": []}
+                    if app not in app_perf_in_node:
+                        app_perf_in_node[app] = perf
+                    else:
+                        app_perf_in_node[app] += perf
+                for app in app_perf_in_node:
+                    apps[app]["perfs"].append(app_perf_in_node[app])
+        n_sfmpl_apps_passed = 0
+        for app in apps:
+            max_app_node_perf = 0
+            total_app_perf = 0
+            for perf in apps[app]["perfs"]:
+                total_app_perf += perf
+                if perf > max_app_node_perf:
+                    max_app_node_perf = perf
+            sfmpl_actual = max_app_node_perf / total_app_perf
+            sfmpl_expected = apps[app]["sfmpl_expected"]
+            if sfmpl_actual <= sfmpl_expected:
+                n_sfmpl_apps_passed += 1
+        self.sfmpl_m = n_sfmpl_apps_passed / len(apps)
+
+    def _update_container_isolation_metric(self, alloc: Allocation) -> None:
+        """
+         Update the container isolation metric from the problem solution.
+         :param alloc: The allocation for the current problem solution.
+         """
+        container_isolation_metric = 0
+        total_vms = 0
+        for fm in alloc:
+            for vm in alloc[fm]:
+                total_vms += 1
+                total_replicas = 0
+                for cg in vm.cgs:
+                    total_replicas += cg.replicas
+                container_isolation_metric += 1/total_replicas
+        self.container_isolation_m = container_isolation_metric / total_vms
+
+    def _update_vm_recycling_metric(self, alloc: dict[InstanceClassFamily, list[Vm]],
+                                    prev_alloc: dict[InstanceClassFamily, list[Vm]]) -> None:
+        """
+         Update the virtual machine recycling metric from the current window allocation and
+         a previous window allocation.
+         :param alloc: The allocation in the current window.
+         :param prev_alloc: The allocation for a previous window.
+         """
+        nodes = {}
+        for fm in alloc:
+            for vm in alloc[fm]:
+                if vm.ic not in nodes:
+                    nodes[vm.ic] = 1
+                else:
+                    nodes[vm.ic] += 1
+        prev_nodes = {}
+        for prev_fm in prev_alloc:
+            for prev_vm in prev_alloc[prev_fm]:
+                if prev_vm.ic not in prev_nodes:
+                    prev_nodes[prev_vm.ic] = 1
+                else:
+                    prev_nodes[prev_vm.ic] += 1
+        common_cores = 0
+        prev_cores = 0
+        for ic in nodes:
+            prev_cores += nodes[ic] * ic.cores
+            if ic in prev_nodes:
+                common_cores += min(nodes[ic], prev_nodes[ic]) * ic.cores
+        self.vm_recyclyng_m = common_cores / prev_cores
+
+    def update_metrics(self, alloc: Allocation, prev_alloc: Allocation = None) -> None:
+        """
+         Update the problem solution metrics.
+         :param alloc: The allocation in the current window.
+         :param prev_alloc: The allocation for a previous window problem solution.
+         """
+        self._update_sfmpl_metric(alloc)
+        self._update_container_isolation_metric(alloc)
+        if prev_alloc is not None:
+            self._update_vm_recycling_metric(alloc, prev_alloc)
 
 
 @dataclass(frozen=True)

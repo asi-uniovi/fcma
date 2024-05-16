@@ -194,7 +194,7 @@ class Fcma:
         # Get indexes of mi,k terms from the aggregation parameters
         m_indexes = []
         for i in range(n_ics):
-            for k in range(agg_pars.n_agg[i]):
+            for k in range(agg_pars.p_agg[i]):
                 m_indexes.append((i, k))
 
         # Get the decrement of nodes for each aggregation path, agg_path_node_dec(i,k) = -1 + summatory of pi,j,k
@@ -202,11 +202,11 @@ class Fcma:
         agg_path_node_dec = {}
         # i = 0 is for the smallest ic in terms of cores, which can not the target aggregation paths
         for i in range(1, n_ics):
-            for k in range(agg_pars.n_agg[i]):
+            for k in range(agg_pars.p_agg[i]):
                 node_dec = 0
                 for j in range(i):  # For each smaller instance class
-                    if (i, k, j) in agg_pars.p_agg:
-                        node_dec += agg_pars.p_agg[(i, k, j)]
+                    if (i, k, j) in agg_pars.v_agg:
+                        node_dec += agg_pars.v_agg[(i, k, j)]
                 agg_path_node_dec[(i, k)] = node_dec - 1
 
         # Define the ILP problem and variables
@@ -219,8 +219,8 @@ class Fcma:
         lp_agg_problem += (
             lpSum(
                 agg_path_node_dec[(i, k)] * m_vars[(i, k)]
-                for i in range(1, len(agg_pars.n_agg))
-                for k in range(agg_pars.n_agg[i])
+                for i in range(1, len(agg_pars.p_agg))
+                for k in range(agg_pars.p_agg[i])
             ),
             "The_sum_of_node_decrements",
         )
@@ -230,15 +230,15 @@ class Fcma:
             # The largest instance class in terms of cores allways fullfil the constraint
             # Get node increments after the aggregations
             if j > 0:
-                lp_increments = lpSum(m_vars[(j, k)] for k in range(agg_pars.n_agg[j]))
+                lp_increments = lpSum(m_vars[(j, k)] for k in range(agg_pars.p_agg[j]))
             else:  # The smallest instance class can not have node increments
                 lp_increments = LpAffineExpression(0)
             # Get node decrements after the aggregations
             lp_decrements = LpAffineExpression(0)
             for i in range(j + 1, n_ics):
-                for k in range(agg_pars.n_agg[i]):
-                    if (i, k, j) in agg_pars.p_agg:
-                        lp_decrements += m_vars[(i, k)] * agg_pars.p_agg[(i, k, j)]
+                for k in range(agg_pars.p_agg[i]):
+                    if (i, k, j) in agg_pars.v_agg:
+                        lp_decrements += m_vars[(i, k)] * agg_pars.v_agg[(i, k, j)]
             # Add constraint
             lp_agg_problem += (
                 ic_name_n_nodes[agg_pars.ic_names[j]] + lp_increments - lp_decrements >= 0,
@@ -264,13 +264,13 @@ class Fcma:
                 # and decrements from the ILP problem solution
                 ic_name = agg_pars.ic_names[i]
                 increments = 0
-                for k in range(agg_pars.n_agg[i]):
+                for k in range(agg_pars.p_agg[i]):
                     increments += m_vars[(i, k)].value()
                 decrements = 0
                 for j in range(i + 1, n_ics):
-                    for k in range(agg_pars.n_agg[j]):
-                        if (j, k, i) in agg_pars.p_agg:
-                            decrements += m_vars[(j, k)].value() * agg_pars.p_agg[(j, k, i)]
+                    for k in range(agg_pars.p_agg[j]):
+                        if (j, k, i) in agg_pars.v_agg:
+                            decrements += m_vars[(j, k)].value() * agg_pars.v_agg[(j, k, i)]
                 # The final number of nodes is the initial plus the increments and minus the decrements
                 agg_ic_name_n_nodes[ic_name] = (
                     ic_name_n_nodes[ic_name] + int(increments) - int(decrements)

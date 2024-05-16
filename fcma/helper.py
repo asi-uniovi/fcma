@@ -205,17 +205,17 @@ def get_fm_aggregation_pars(
     ic_cores = tuple(cores)
     for fm_agg_par in fm_agg_pars.values():
         if ic_cores == fm_agg_par.ic_cores:
-            n_agg = fm_agg_par.n_agg
             p_agg = fm_agg_par.p_agg
-            return FamilyClassAggPars(ic_names, ic_cores, n_agg, p_agg)
+            v_agg = fm_agg_par.v_agg
+            return FamilyClassAggPars(ic_names, ic_cores, p_agg, v_agg)
 
     # Initialize the solution, which is composed of a dictionary n_aggs with the number of aggregations
-    # for each instance type and a dictionary p_agg with the number of instances of each type that are
+    # for each instance type and a dictionary v_agg with the number of instances of each type that are
     # used in each aggregation.
-    n_agg_list = [0]  # n_agg[i] = number of aggregations for ics[i]
-    p_agg = (
+    p_agg_list = [0]  # p_agg[i] = number of aggregations for ics[i]
+    v_agg = (
         {}
-    )  # p_agg[(i, k, j)] = number of instances of ics[j] in the k-th aggregation to get ics[i]
+    )  # v_agg[(i, k, j)] = number of instances of ics[j] in the k-th aggregation to get ics[i]
 
     for i in range(1, len(ics)):
         target_ic = ics[i]
@@ -224,10 +224,10 @@ def get_fm_aggregation_pars(
         for k, q in enumerate(_get_aggregations_for(target_ic, smaller_ics)):
             for j, q_j in enumerate(q):
                 if q_j > 0:
-                    p_agg[(i, k, j)] = q_j
-        n_agg_list.append(k + 1)
+                    v_agg[(i, k, j)] = q_j
+        p_agg_list.append(k + 1)
 
-    return FamilyClassAggPars(ic_names, tuple(cores), tuple(n_agg_list), p_agg)
+    return FamilyClassAggPars(ic_names, tuple(cores), tuple(p_agg_list), v_agg)
 
 
 # pylint: disable = E, W, R, C

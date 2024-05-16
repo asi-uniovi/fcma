@@ -130,6 +130,12 @@ class SolutionPrinter:
         print(f"Final status: {self._statistics.final_status}")
         print(f"Final cost: {self._statistics.final_cost:.3f}")
         print(f"Total spent time: {self._statistics.total_seconds: .3f} seconds")
+        if self._statistics.sfmpl_m is not None:
+            print(f"SFMPL metric: {self._statistics.sfmpl_m: .3f}")
+        if self._statistics.container_isolation_m is not None:
+            print(f"Container isolation metric: {self._statistics.container_isolation_m: .3f}")
+        if self._statistics.vm_recyclyng_m is not None:
+            print(f"VM recycling metric: {self._statistics.vm_recyclyng_m: .3f}")
 
     def print(self):
         """
