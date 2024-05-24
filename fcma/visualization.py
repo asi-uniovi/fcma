@@ -134,8 +134,8 @@ class SolutionPrinter:
             print(f"SFMPL metric: {self._statistics.sfmpl_m: .3f}")
         if self._statistics.container_isolation_m is not None:
             print(f"Container isolation metric: {self._statistics.container_isolation_m: .3f}")
-        if self._statistics.vm_recyclyng_m is not None:
-            print(f"VM recycling metric: {self._statistics.vm_recyclyng_m: .3f}")
+        if self._statistics.vm_recycling_m is not None:
+            print(f"VM recycling metric: {self._statistics.vm_recycling_m: .3f}")
 
     def print(self):
         """

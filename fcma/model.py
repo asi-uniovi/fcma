@@ -895,7 +895,7 @@ class SolvingStats:
     # Metrics for secondary optimization objectives
     sfmpl_m: None | float = None
     container_isolation_m: None | float = None
-    vm_recyclyng_m: None | float = None
+    vm_recycling_m: None | float = None
 
     def _update_sfmpl_metric(self, alloc: Allocation) -> None:
         """
@@ -948,46 +948,57 @@ class SolvingStats:
                 container_isolation_metric += 1/total_replicas
         self.container_isolation_m = container_isolation_metric / total_vms
 
-    def _update_vm_recycling_metric(self, alloc: dict[InstanceClassFamily, list[Vm]],
-                                    prev_alloc: dict[InstanceClassFamily, list[Vm]]) -> None:
+    def _update_vm_recycling_metric(self, alloc1: dict[InstanceClassFamily, list[Vm]],
+                                    alloc2: dict[InstanceClassFamily, list[Vm]]) -> None:
         """
-         Update the virtual machine recycling metric from the current window allocation and
-         a previous window allocation.
-         :param alloc: The allocation in the current window.
-         :param prev_alloc: The allocation for a previous window.
+         Update the virtual machine recycling metric from two consecutive scheduling windows.
+         :param alloc1: The allocation for the first scheduling window.
+         :param alloc2: The allocation for the second scheduling window.
          """
-        nodes = {}
-        for fm in alloc:
-            for vm in alloc[fm]:
-                if vm.ic not in nodes:
-                    nodes[vm.ic] = 1
+        nodes1 = {}
+        for fm in alloc1:
+            for vm in alloc1[fm]:
+                if vm.ic not in nodes1:
+                    nodes1[vm.ic] = 1
                 else:
-                    nodes[vm.ic] += 1
-        prev_nodes = {}
-        for prev_fm in prev_alloc:
-            for prev_vm in prev_alloc[prev_fm]:
-                if prev_vm.ic not in prev_nodes:
-                    prev_nodes[prev_vm.ic] = 1
+                    nodes1[vm.ic] += 1
+        nodes2 = {}
+        for fm in alloc2:
+            for vm in alloc2[fm]:
+                if vm.ic not in nodes2:
+                    nodes2[vm.ic] = 1
                 else:
-                    prev_nodes[prev_vm.ic] += 1
-        common_cores = 0
-        prev_cores = 0
-        for ic in nodes:
-            prev_cores += nodes[ic] * ic.cores
-            if ic in prev_nodes:
-                common_cores += min(nodes[ic], prev_nodes[ic]) * ic.cores
-        self.vm_recyclyng_m = common_cores / prev_cores
+                    nodes2[vm.ic] += 1
+        common_cores12 = 0
+        common_cores21 = 0
+        cores1 = 0
+        cores2 = 0
+        for ic in nodes1:
+            cores1 += nodes1[ic] * ic.cores.magnitude
+            if ic in nodes2:
+                common_cores12 += min(nodes1[ic], nodes2[ic]) * ic.cores.magnitude
+        for ic in nodes2:
+            cores2 += nodes2[ic] * ic.cores.magnitude
+            if ic in nodes1:
+                common_cores21 += min(nodes1[ic], nodes2[ic]) * ic.cores.magnitude
+        self.vm_recycling_m = max(common_cores12 / cores1, common_cores21 / cores2)
 
     def update_metrics(self, alloc: Allocation, prev_alloc: Allocation = None) -> None:
         """
-         Update the problem solution metrics.
+         Update the problem solution metrics. Valid metric values are in [0, 1] interval.
+         Invalid metric values take value -1.
          :param alloc: The allocation in the current window.
          :param prev_alloc: The allocation for a previous window problem solution.
          """
         self._update_sfmpl_metric(alloc)
+        assert self.sfmpl_m <= 1.0 + DELTA_VAL
         self._update_container_isolation_metric(alloc)
+        assert self.container_isolation_m <= 1.0 + DELTA_VAL
         if prev_alloc is not None:
             self._update_vm_recycling_metric(alloc, prev_alloc)
+            assert self.vm_recycling_m <= 1.0 + DELTA_VAL
+        else:
+            self.vm_recycling_m = -1
 
 
 @dataclass(frozen=True)

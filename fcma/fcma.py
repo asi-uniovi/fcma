@@ -536,7 +536,7 @@ class Fcma:
             )
 
             # First ILP problem. The number of cores in n_cores may be unfeasible. For example, if all the
-            # instance classes hava an even number of cores, it is not possible to get an odd n_cores value.
+            # instance classes have an even number of cores, it is not possible to get an odd n_cores value.
             # Thus, firstly we need to calculate the minimum number of cores higher than or equal to n_cores
             # that may be obtained from the isntance classes in the family.
             min_cores = n_cores
@@ -850,7 +850,7 @@ class Fcma:
         vms = self._allocation_with_promotion_and_addition(n_nodes_ccs)
 
         # Some nodes may remain empty after the promotiona and addition
-        vms = Fcma.remove_empty_nodes(vms)
+        Fcma.remove_empty_nodes(vms)
 
         # Calculate the allocation cost
         cost = CurrencyPerTime("0 usd/hour")
@@ -977,12 +977,18 @@ class Fcma:
                     self._vms[fm].extend(added_vms)
 
     @staticmethod
-    def remove_empty_nodes(vms: list[Vm]) -> list[Vm]:
+    def remove_empty_nodes(vms: list[Vm]):
         """
         Remove empty nodes, i.e, those without alllocated containers.
-        :return: A list with non-empty nodes.
         """
-        return list(filter(lambda vm: len(vm.cgs) > 0, vms))
+        for vm in vms:
+            remove_vm = True
+            for cg in vm.cgs:
+                if cg.replicas > 0:
+                    remove_vm = False
+                    break
+            if remove_vm:
+                vms.remove(vm)
 
     def solve(self, solving_pars: SolvingPars = None) -> Solution:
         """
@@ -1040,7 +1046,7 @@ class Fcma:
                 self._vms[fm] = self._allocation_with_promotion_and_addition(sol)
 
                 # Some nodes may remain empty after the promotiona and addition
-                self._vms[fm] = Fcma.remove_empty_nodes(self._vms[fm])
+                Fcma.remove_empty_nodes(self._vms[fm])
 
                 # Until now promotion was prefered to node addition, because aggregating CPU and memory
                 # capacities makes future allocations easier. However, when the promotion is the last
@@ -1169,6 +1175,14 @@ class Fcma:
             max_surplus_perf_percentage=max_surplus_perf * 100,
             global_surplus_perf_percentage=global_surplus_perf * 100,
         )
+
+    @property
+    def system(self):
+        return self._system
+
+    @property
+    def workloads(self):
+        return self._workloads
 
 
 # Monkey patching

@@ -1,6 +1,6 @@
 """
-Performance analysis of FCMA on problems defined in JSON files.
-For every JSON file it generates a row in a CSV file with the following information:
+Performance analysis of FCMA on problems defined in JSON or PKL files.
+For every JSON or PKL file it generates a row in a CSV file with the following information:
 - JSON file name with the problem.
 - Speed level: 1, 2 or 3.
 - Cost of the solution in $/hour.
@@ -8,6 +8,9 @@ For every JSON file it generates a row in a CSV file with the following informat
 - Time to calculate the solution in seconds.
 - Cost of the solution relative to the reference analysis.
 - Time to calculate the solution relative to the reference analysis.
+- Actual SFMPL metric
+- Container isolation metric
+- Virtual machine recycling metric
 
 The reference analysis is a CSV file with "-0" suffix in the file name. On the first execution the
 CSV file has "-0" suffix, which is incremented on subsequent analysis.
@@ -16,19 +19,29 @@ At the end of the sumamary a row with "total" as special name is written for eve
 """
 
 import json
+import pickle
 import pathlib
 import csv
 import datetime
 import fcma
+from fcma import Fcma
 from fcma.serialization import ProblemSerializer
 from fcma import PULP_CBC_CMD, FcmaStatus
+from pint import set_application_registry
+from cloudmodel.unified.units import ureg
 
-json_dir = "json_data"
+set_application_registry(ureg)
+
+
+file_dir = "problem_data"
 perf_dir = "perf_data"
 perf_file_prefix = f"{perf_dir}/perf"
 perf_ref_file = f"{perf_file_prefix}-0.csv"
 
-repetitions = 1  # Number of repetitions to get average times
+# A value higher than or equal to 1 that multiplies application loads
+# to get virtual machine recycling metrics.
+recycling_load_mul = 1.2 # Load 20 % higher
+
 
 gap_rel = 0.05  # Maximum relative gap between any ILP solution and the optimal
 solver = PULP_CBC_CMD(msg=0, gapRel=gap_rel)
@@ -42,6 +55,9 @@ csv_label_row = [
     "total_time(sec)",
     "relative_cost",
     "relative_time",
+    "sfmpl_m",
+    "container_isolation_m",
+    "vm_recycling_m"
     "comment",
 ]
 
@@ -70,11 +86,10 @@ def get_next_perf_path() -> str:
     return perf_ref_file
 
 
-def get_perf_data(
-    sol: fcma.Solution, perf_ref_data: dict, total_data: dict, lower_bound: float
-) -> list:
+def get_perf_data(sol: fcma.Solution, perf_ref_data: dict,
+                  total_data: dict, lower_bound: float) -> list:
     """
-    Get performance data from the current solution nd te reference performance data.
+    Get performance data from the current solution and the reference performance data.
     At the same time, total performance data is updated.
     """
     perf_data = []
@@ -113,16 +128,19 @@ def get_perf_data(
         total_data["time(sec)"] += sol.statistics.total_seconds
 
     if len(perf_ref_data) == 0:
-        perf_data.extend(["1.0", "1.0"])
+        perf_data.extend(["1.0", "1.0", "1.0"])
         if "relative_cost" not in total_data:
             total_data["relative_cost"] = 1.0
         else:
             total_data["relative_cost"] += 1.0
+        if "relative_prealloc_time" not in total_data:
+            total_data["relative_prealloc_time"] = 1.0
+        else:
+            total_data["relative_prealloc_time"] += 1.0
         if "relative_time" not in total_data:
             total_data["relative_time"] = 1.0
         else:
             total_data["relative_time"] += 1.0
-
     else:
         relative_cost = sol.statistics.final_cost.magnitude / float(perf_ref_data["cost($/hour)"])
         perf_data.append(f"{relative_cost:.4f}")
@@ -139,13 +157,30 @@ def get_perf_data(
             total_data["relative_prealloc_time"] = relative_prealloc_time
         else:
             total_data["relative_prealloc_time"] += relative_prealloc_time
-
         relative_time = sol.statistics.total_seconds / float(perf_ref_data["total_time(sec)"])
         perf_data.append(f"{relative_time:.4f}")
         if "relative_time" not in total_data:
             total_data["relative_time"] = relative_time
         else:
             total_data["relative_time"] += relative_time
+
+    perf_data.append(f"{sol.statistics.sfmpl_m:.4f}")
+    if "sfmpl_m" not in total_data:
+        total_data["sfmpl_m"] = sol.statistics.sfmpl_m
+    else:
+        total_data["sfmpl_m"] += sol.statistics.sfmpl_m
+
+    perf_data.append(f"{sol.statistics.container_isolation_m:.4f}")
+    if "container_isolation_m" not in total_data:
+        total_data["container_isolation_m"] = sol.statistics.container_isolation_m
+    else:
+        total_data["container_isolation_m"] += sol.statistics.container_isolation_m
+
+    perf_data.append(f"{solution.statistics.vm_recycling_m:.4f}")
+    if "vm_recycling_m" not in total_data:
+        total_data["vm_recycling_m"] = sol.statistics.vm_recycling_m
+    else:
+        total_data["vm_recycling_m"] += sol.statistics.vm_recycling_m
 
     return perf_data
 
@@ -160,29 +195,39 @@ except:
 # Get the path of the CSV file with analysis to be written
 perf_path = get_next_perf_path()
 
-# Systems are in the form of JSON files
-file_names = [f.name for f in pathlib.Path(json_dir).glob("*.json")]
+# Systems are in the form of JSON or PKL files
+file_names = [f.name for f in pathlib.Path(file_dir).glob("*.pkl")]
+file_names += [f.name for f in pathlib.Path(file_dir).glob("*.json")]
 
 with open(perf_path, "w", newline="") as csv_file:
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(csv_label_row)
     total_data = {1: {}, 2: {}, 3: {}}
-    # Perform the three FCMA analysis with each JSON file
-    for json_file_name in file_names:
-        json_path = f"{json_dir}/{json_file_name}"
-        with open(json_path, "r") as json_file:
+    # Perform the three FCMA analysis with each PKL or JSON file
+    for file_name in file_names:
+        file_path = f"{file_dir}/{file_name}"
+        with open(file_path, "r") as problem_file:
+            if file_path.endswith(".pkl"):
+                problem = pickle.load(problem_file)
+                serializer = ProblemSerializer(problem)
+                fcma_problem = ProblemSerializer.from_dict(serializer.as_dict())
+            else:
+                fcma_problem = ProblemSerializer.from_dict(json.load(problem_file))
+            if recycling_load_mul > 1.0:
+                mul_workloads = {key: value*recycling_load_mul
+                                 for key, value in fcma_problem.workloads.items()}
+                mul_fcma_problem = Fcma(fcma_problem.system, mul_workloads)
             # Perform analysis with the three speed levels
-            fcma_problem = ProblemSerializer.from_dict(json.load(json_file))
             for speed_level in (1, 2, 3):
                 current_time = datetime.datetime.now().strftime("%H:%M:%S")
-                print(f"{current_time}: {json_file_name}; speed level = {speed_level}")
-                avg_time = 0
-                for i in range(repetitions):
-                    solution = fcma_problem.solve(
-                        fcma.SolvingPars(speed_level=speed_level, solver=solver)
-                    )
-                    avg_time += solution.statistics.total_seconds
-                solution.statistics.total_seconds = avg_time / repetitions
+                print(f"{current_time}: {file_name}; speed level = {speed_level}")
+                solution = fcma_problem.solve(
+                    fcma.SolvingPars(speed_level=speed_level, solver=solver))
+                if recycling_load_mul > 1.0:
+                    print(f"\tSolving with workload x {recycling_load_mul:.2f}")
+                    mul_solution = mul_fcma_problem.solve(
+                        fcma.SolvingPars(speed_level=speed_level, solver=solver))
+                solution.statistics.total_seconds = solution.statistics.total_seconds
                 if speed_level == 1:
                     if solution.statistics.pre_allocation_status == FcmaStatus.INVALID:
                         lower_bound = None
@@ -190,14 +235,18 @@ with open(perf_path, "w", newline="") as csv_file:
                         lower_bound = solution.statistics.pre_allocation_cost.magnitude
                         if gap_rel > 0:
                             lower_bound *= (1.0 + gap_rel)
+                if recycling_load_mul > 1.0:
+                    solution.statistics.update_metrics(solution.allocation, mul_solution.allocation)
+                else:
+                    solution.statistics.update_metrics(solution.allocation)
                 reference_data = {}
-                if (json_file_name, str(speed_level)) in perf_ref_data:
-                    reference_data = perf_ref_data[(json_file_name, str(speed_level))]
+                if (file_name, str(speed_level)) in perf_ref_data:
+                    reference_data = perf_ref_data[(file_name, str(speed_level))]
                 perf_data = get_perf_data(
                     solution, reference_data, total_data[speed_level], lower_bound
                 )
                 perf_data.insert(0, speed_level)
-                perf_data.insert(0, json_file_name)
+                perf_data.insert(0, file_name)
                 perf_data.append("")  # For comments
                 csv_writer.writerow(perf_data)
     if len(file_names) > 0:
@@ -211,7 +260,11 @@ with open(perf_path, "w", newline="") as csv_file:
                 f'{total_data[speed_level]["prealloc_time(sec)"]:.4f}',
                 f'{total_data[speed_level]["time(sec)"]:.4f}',
                 f'{total_data[speed_level]["relative_cost"] / total_data[speed_level]["n"]:.4f}',
+                f'{total_data[speed_level]["relative_prealloc_time"] / total_data[speed_level]["n"]:.4f}',
                 f'{total_data[speed_level]["relative_time"] / total_data[speed_level]["n"]:.4f}',
+                f'{total_data[speed_level]["sfmpl_m"] / total_data[speed_level]["n"]:.4f}',
+                f'{total_data[speed_level]["container_isolation_m"] / total_data[speed_level]["n"]:.4f}',
+                f'{total_data[speed_level]["vm_recycling_m"] / total_data[speed_level]["n"]:.4f}',
                 "",
             ]
             csv_writer.writerow(total_data_row)
