@@ -662,6 +662,10 @@ class Vm:
 
         if self.free_cores + DELTA_CPU < replicas * cc.cores:
             return False
+        # This simple check may reduce the method computation times
+        if self.free_mem + DELTA_MEM > replicas * cc.mem[0]:
+            return True
+
         cgs = self.get_container_groups(cc)
         if len(cgs) > 0:
             prev_replicas = cgs[0].replicas
@@ -686,6 +690,10 @@ class Vm:
         n_from_cpu = floor((self.free_cores + DELTA_CPU) / cc.cores)
         if n_from_cpu == 0:
             return 0
+
+        # This simple check may reduce the method computation times
+        if self.free_mem + DELTA_MEM > n_from_cpu * cc.mem[0]:
+            return n_from_cpu
 
         # We assume that memory requirements per core decreases as aggregation increases, so the
         # greater the container aggregation, the lower the memory per core requested. Thus, the
