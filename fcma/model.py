@@ -904,6 +904,7 @@ class SolvingStats:
     sfmpl_m: None | float = None
     container_isolation_m: None | float = None
     vm_recycling_m: None | float = None
+    vm_load_balance_m: None | float = None
 
     def _update_sfmpl_metric(self, alloc: Allocation) -> None:
         """
@@ -991,6 +992,26 @@ class SolvingStats:
                 common_cores21 += min(nodes1[ic], nodes2[ic]) * ic.cores.magnitude
         self.vm_recycling_m = max(common_cores12 / cores1, common_cores21 / cores2)
 
+    def _update_vm_load_balance_metric(self, alloc: Allocation) -> None:
+        """
+         Update the load-balance metric among virtual machines from the problem solution.
+         :param alloc: The allocation for the current problem solution.
+         """
+        app_nodes = {}
+        for fm in alloc:
+            for node in alloc[fm]:
+                for cg in node.cgs:
+                    cc = cg.cc
+                    app = cc.app
+                    if app not in app_nodes:
+                        app_nodes[app] = [node]
+                    elif node not in app_nodes[app]:
+                        app_nodes[app].append(node)
+        load_balance_metric = 0
+        for app in app_nodes:
+            load_balance_metric += 1 / len(app_nodes[app])
+        self.vm_load_balance_m = load_balance_metric / len(app_nodes)
+
     def update_metrics(self, alloc: Allocation, prev_alloc: Allocation = None) -> None:
         """
          Update the problem solution metrics. Valid metric values are in [0, 1] interval.
@@ -1007,6 +1028,8 @@ class SolvingStats:
             assert self.vm_recycling_m <= 1.0 + DELTA_VAL
         else:
             self.vm_recycling_m = -1
+        self._update_vm_load_balance_metric(alloc)
+        assert self.vm_load_balance_m <= 1.0 + DELTA_VAL
 
 
 @dataclass(frozen=True)
