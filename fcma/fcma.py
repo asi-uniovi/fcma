@@ -850,7 +850,7 @@ class Fcma:
         vms = self._allocation_with_promotion_and_addition(n_nodes_ccs)
 
         # Some nodes may remain empty after the promotiona and addition
-        Fcma.remove_empty_nodes(vms)
+        vms = Fcma.remove_empty_nodes(vms)
 
         # Calculate the allocation cost
         cost = CurrencyPerTime("0 usd/hour")
@@ -977,18 +977,13 @@ class Fcma:
                     self._vms[fm].extend(added_vms)
 
     @staticmethod
-    def remove_empty_nodes(vms: list[Vm]):
+    def remove_empty_nodes(vms: list[Vm]) -> list[Vm]:
         """
         Remove empty nodes, i.e, those without alllocated containers.
+        :param vms: A list of virtual machines.
+        :returns: TA new list with the empty virtual machines removed
         """
-        for vm in vms:
-            remove_vm = True
-            for cg in vm.cgs:
-                if cg.replicas > 0:
-                    remove_vm = False
-                    break
-            if remove_vm:
-                vms.remove(vm)
+        return [vm for vm in vms if any(cg.replicas > 0 for cg in vm.cgs)]
 
     def solve(self, solving_pars: SolvingPars = None) -> Solution:
         """
@@ -1046,7 +1041,7 @@ class Fcma:
                 self._vms[fm] = self._allocation_with_promotion_and_addition(sol)
 
                 # Some nodes may remain empty after the promotiona and addition
-                Fcma.remove_empty_nodes(self._vms[fm])
+                self._vms[fm] = Fcma.remove_empty_nodes(self._vms[fm])
 
                 # Until now promotion was prefered to node addition, because aggregating CPU and memory
                 # capacities makes future allocations easier. However, when the promotion is the last

@@ -943,9 +943,9 @@ class SolvingStats:
 
     def _update_container_isolation_metric(self, alloc: Allocation) -> None:
         """
-         Update the container isolation metric from the problem solution.
-         :param alloc: The allocation for the current problem solution.
-         """
+        Update the container isolation metric from the problem solution.
+        :param alloc: The allocation for the current problem solution.
+        """
         container_isolation_metric = 0
         total_vms = 0
         for fm in alloc:
@@ -954,30 +954,28 @@ class SolvingStats:
                 total_replicas = 0
                 for cg in vm.cgs:
                     total_replicas += cg.replicas
-                container_isolation_metric += 1/total_replicas
+                container_isolation_metric += 1 / total_replicas
         self.container_isolation_m = container_isolation_metric / total_vms
 
-    def _update_vm_recycling_metric(self, alloc1: dict[InstanceClassFamily, list[Vm]],
-                                    alloc2: dict[InstanceClassFamily, list[Vm]]) -> None:
+    def _update_vm_recycling_metric(
+        self,
+        alloc1: dict[InstanceClassFamily, list[Vm]],
+        alloc2: dict[InstanceClassFamily, list[Vm]],
+    ) -> None:
         """
-         Update the virtual machine recycling metric from two consecutive scheduling windows.
-         :param alloc1: The allocation for the first scheduling window.
-         :param alloc2: The allocation for the second scheduling window.
-         """
-        nodes1 = {}
+        Update the virtual machine recycling metric from two consecutive scheduling windows.
+        :param alloc1: The allocation for the first scheduling window.
+        :param alloc2: The allocation for the second scheduling window.
+        """
+        nodes1 = defaultdict(int)
+        nodes2 = defaultdict(int)
+
         for fm in alloc1:
             for vm in alloc1[fm]:
-                if vm.ic not in nodes1:
-                    nodes1[vm.ic] = 1
-                else:
-                    nodes1[vm.ic] += 1
-        nodes2 = {}
+                nodes1[vm.ic] += 1
         for fm in alloc2:
             for vm in alloc2[fm]:
-                if vm.ic not in nodes2:
-                    nodes2[vm.ic] = 1
-                else:
-                    nodes2[vm.ic] += 1
+                nodes2[vm.ic] += 1
         common_cores12 = 0
         common_cores21 = 0
         cores1 = 0
@@ -994,9 +992,9 @@ class SolvingStats:
 
     def _update_vm_load_balance_metric(self, alloc: Allocation) -> None:
         """
-         Update the load-balance metric among virtual machines from the problem solution.
-         :param alloc: The allocation for the current problem solution.
-         """
+        Update the load-balance metric among virtual machines from the problem solution.
+        :param alloc: The allocation for the current problem solution.
+        """
         app_nodes = {}
         for fm in alloc:
             for node in alloc[fm]:
@@ -1014,11 +1012,11 @@ class SolvingStats:
 
     def update_metrics(self, alloc: Allocation, prev_alloc: Allocation = None) -> None:
         """
-         Update the problem solution metrics. Valid metric values are in [0, 1] interval.
-         Invalid metric values take value -1.
-         :param alloc: The allocation in the current window.
-         :param prev_alloc: The allocation for a previous window problem solution.
-         """
+        Update the problem solution metrics. Valid metric values are in [0, 1] interval.
+        Invalid metric values take value -1.
+        :param alloc: The allocation in the current window.
+        :param prev_alloc: The allocation for a previous window problem solution.
+        """
         self._update_sfmpl_metric(alloc)
         assert self.sfmpl_m <= 1.0 + DELTA_VAL
         self._update_container_isolation_metric(alloc)
