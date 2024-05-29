@@ -901,14 +901,14 @@ class SolvingStats:
     total_seconds: None | float = None
 
     # Metrics for secondary optimization objectives
-    sfmpl_m: None | float = None
+    fault_tolerance_m: None | float = None
     container_isolation_m: None | float = None
     vm_recycling_m: None | float = None
     vm_load_balance_m: None | float = None
 
-    def _update_sfmpl_metric(self, alloc: Allocation) -> None:
+    def _update_fault_tolerance_metric(self, alloc: Allocation) -> None:
         """
-        Update the SFMPL metric from the problem solution.
+        Update the fault tolerance metric from the problem solution.
         :param alloc: The allocation for the current problem solution.
         """
         apps = {}
@@ -939,7 +939,7 @@ class SolvingStats:
             sfmpl_expected = apps[app]["sfmpl_expected"]
             if sfmpl_actual <= sfmpl_expected:
                 n_sfmpl_apps_passed += 1
-        self.sfmpl_m = n_sfmpl_apps_passed / len(apps)
+        self.fault_tolerance_m = n_sfmpl_apps_passed / len(apps)
 
     def _update_container_isolation_metric(self, alloc: Allocation) -> None:
         """
@@ -1017,8 +1017,8 @@ class SolvingStats:
         :param alloc: The allocation in the current window.
         :param prev_alloc: The allocation for a previous window problem solution.
         """
-        self._update_sfmpl_metric(alloc)
-        assert self.sfmpl_m <= 1.0 + DELTA_VAL
+        self._update_fault_tolerance_metric(alloc)
+        assert self.fault_tolerance_m <= 1.0 + DELTA_VAL
         self._update_container_isolation_metric(alloc)
         assert self.container_isolation_m <= 1.0 + DELTA_VAL
         if prev_alloc is not None:

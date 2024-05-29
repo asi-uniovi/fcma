@@ -56,8 +56,9 @@ csv_label_row = [
     "prealloc_time(sec)",
     "total_time(sec)",
     "relative_cost",
+    "relative_prealloc_time",
     "relative_time",
-    "sfmpl_m",
+    "fault_tolerance_m",
     "container_isolation_m",
     "vm_recycling_m",
     "vm_load_balance_m",
@@ -136,8 +137,8 @@ def get_perf_data(
         perf_data.append(f"{relative_time:.4f}")
         total_data["relative_time"] += relative_time
 
-    perf_data.append(f"{sol.statistics.sfmpl_m:.4f}")
-    total_data["sfmpl_m"] += sol.statistics.sfmpl_m
+    perf_data.append(f"{sol.statistics.fault_tolerance_m:.4f}")
+    total_data["fault_tolerance_m"] += sol.statistics.fault_tolerance_m
 
     perf_data.append(f"{sol.statistics.container_isolation_m:.4f}")
     total_data["container_isolation_m"] += sol.statistics.container_isolation_m
@@ -231,7 +232,7 @@ with open(perf_path, "w", newline="") as csv_file:
                 f'{total_data[speed_level]["relative_cost"] / total_data[speed_level]["n"]:.4f}',
                 f'{total_data[speed_level]["relative_prealloc_time"] / total_data[speed_level]["n"]:.4f}',
                 f'{total_data[speed_level]["relative_time"] / total_data[speed_level]["n"]:.4f}',
-                f'{total_data[speed_level]["sfmpl_m"] / total_data[speed_level]["n"]:.4f}',
+                f'{total_data[speed_level]["fault_tolerance_m"] / total_data[speed_level]["n"]:.4f}',
                 f'{total_data[speed_level]["container_isolation_m"] / total_data[speed_level]["n"]:.4f}',
                 f'{total_data[speed_level]["vm_recycling_m"] / total_data[speed_level]["n"]:.4f}',
                 f'{total_data[speed_level]["vm_load_balance_m"] / total_data[speed_level]["n"]:.4f}',
