@@ -849,7 +849,7 @@ class Fcma:
         n_nodes_ccs = {"n_nodes": fm_nodes[fm], "ccs": replicas}
         vms = self._allocation_with_promotion_and_addition(n_nodes_ccs)
 
-        # Some nodes may remain empty after the promotiona and addition
+        # Some nodes may remain empty after the promotion and addition
         vms = Fcma.remove_empty_nodes(vms)
 
         # Calculate the allocation cost
@@ -975,6 +975,8 @@ class Fcma:
                             self._vms[fm][i] = self._vms[fm][i].vm_before_promotion
                     # Append the virtual machines coming from the addition alternative
                     self._vms[fm].extend(added_vms)
+                    # Some nodes may remain empty after the promotion and addition
+                    self._vms[fm] = Fcma.remove_empty_nodes(self._vms[fm])
 
     @staticmethod
     def remove_empty_nodes(vms: list[Vm]) -> list[Vm]:
