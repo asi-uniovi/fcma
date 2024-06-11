@@ -7,71 +7,71 @@ from fcma import InstanceClass, InstanceClassFamily
 
 # Instance class families. Firstly, the parent family and next its children
 A_fm = InstanceClassFamily("A")
-A_fm = InstanceClassFamily("A", parent_fms=A_fm)
-Am_fm = InstanceClassFamily("Am", parent_fms=A_fm)
+AC_fm = InstanceClassFamily("AC", parent_fms=A_fm)
+AM_fm = InstanceClassFamily("AM", parent_fms=A_fm)
 B_fm = InstanceClassFamily("B")
-B_fm = InstanceClassFamily("B", parent_fms=B_fm)
-Bm_fm = InstanceClassFamily("Bm", parent_fms=B_fm)
+BC_fm = InstanceClassFamily("BC", parent_fms=B_fm)
+BM_fm = InstanceClassFamily("BM", parent_fms=B_fm)
 
-families = [A_fm, A_fm, Am_fm, B_fm, B_fm, Bm_fm]
+families = [A_fm, AC_fm, AM_fm, B_fm, BC_fm, BM_fm]
 
 # Instance classes
-A_1core_4GB = InstanceClass(
-    name="A_1core_4GB",
+AC1 = InstanceClass(
+    name="AC1",
     price=CurrencyPerTime("0.100 usd/hour"),
     cores=ComputationalUnits("1 cores"),
     mem=Storage("4 gibibytes"),
-    family=A_fm,
+    family=AC_fm,
 )
-A_2core_8GB = A_1core_4GB.mul(2, "A_2core_4GB")
-A_4core_16GB = A_1core_4GB.mul(4, "A_4core_16GB")
-A_8core_32GB = A_1core_4GB.mul(8, "A_8core_32GB")
-A_18core_72GB = A_1core_4GB.mul(18, "A_18core_72GB")
-A_24core_96GB = A_1core_4GB.mul(24, "A_24core_96GB")
-A_36core_144GB = A_1core_4GB.mul(36, "A_36core_144GB")
-A_48core_192GB = A_1core_4GB.mul(48, "A_48core_192GB")
+AC2 = AC1.mul(2, "AC2")
+AC4 = AC1.mul(4, "AC4")
+AC8 = AC1.mul(8, "AC8")
+AC18 = AC1.mul(18, "AC18")
+AC24 = AC1.mul(24, "AC24")
+AC36 = AC1.mul(36, "AC36")
+AC48 = AC1.mul(48, "AC48")
 
-Am_1core_16GB = InstanceClass(
-    name="Am_1core_16GB",
+AM1 = InstanceClass(
+    name="AM1",
     price=CurrencyPerTime("0.140 usd/hour"),
     cores=ComputationalUnits("1 cores"),
     mem=Storage("16 gibibytes"),
-    family=Am_fm,
+    family=AM_fm,
 )
-Am_2core_32GB = A_1core_4GB.mul(2, "Am_2core_32GB")
-Am_4core_64GB = A_1core_4GB.mul(4, "Am_4core_64GB")
-Am_8core_128GB = A_1core_4GB.mul(8, "Am_8core_128GB")
-Am_18core_288GB = A_1core_4GB.mul(18, "Am_18core_288GB")
-Am_24core_384GB = A_1core_4GB.mul(24, "Am_24core_384GB")
-Am_36core_576GB = A_1core_4GB.mul(36, "Am_36core_576GB")
-Am_48core_768GB = A_1core_4GB.mul(48, "Am_48core_768GB")
+AM2 = AM1.mul(2, "AM2")
+AM4 = AM1.mul(4, "AM4")
+AM8 = AM1.mul(8, "AM8")
+AM18 = AM1.mul(18, "AM18")
+AM24 = AM1.mul(24, "AM24")
+AM36 = AM1.mul(36, "AM36")
+AM48 = AM1.mul(48, "AM48")
 
-B_1core_4GB = InstanceClass(
-    name="B_1core_4GB",
+BC1 = InstanceClass(
+    name="BC1",
     price=CurrencyPerTime("0.070 usd/hour"),
     cores=ComputationalUnits("1 cores"),
     mem=Storage("4 gibibytes"),
-    family=B_fm,
+    family=BC_fm,
 )
-B_2core_8GB = B_1core_4GB.mul(2, "B_2core_4GB")
-B_4core_16GB = B_1core_4GB.mul(4, "B_4core_16GB")
-B_8core_32GB = B_1core_4GB.mul(8, "B_8core_32GB")
-B_18core_72GB = B_1core_4GB.mul(18, "B_18core_72GB")
-B_24core_96GB = B_1core_4GB.mul(24, "B_24core_96GB")
-B_36core_144GB = B_1core_4GB.mul(36, "B_36core_144GB")
-B_48core_192GB = B_1core_4GB.mul(48, "B_48core_192GB")
+BC2 = BC1.mul(2, "BC2")
+BC4 = BC1.mul(4, "BC4")
+BC8 = BC1.mul(8, "BC8")
+BC18 = BC1.mul(18, "BC18")
+BC24 = BC1.mul(24, "BC24")
+BC36 = BC1.mul(36, "BC36")
+BC48 = BC1.mul(48, "BC48")
 
-Bm_1core_16GB = InstanceClass(
-    name="Bm_1core_16GB",
+BM1 = InstanceClass(
+    name="BM1",
     price=CurrencyPerTime("0.110 usd/hour"),
     cores=ComputationalUnits("1 cores"),
     mem=Storage("16 gibibytes"),
-    family=Bm_fm,
+    family=BM_fm,
 )
-Bm_2core_32GB = B_1core_4GB.mul(2, "Bm_2core_32GB")
-Bm_4core_64GB = B_1core_4GB.mul(4, "Bm_4core_64GB")
-Bm_8core_128GB = B_1core_4GB.mul(8, "Bm_8core_128GB")
-Bm_18core_288GB = B_1core_4GB.mul(18, "Bm_18core_288GB")
-Bm_24core_384GB = B_1core_4GB.mul(24, "Bm_24core_384GB")
-Bm_36core_576GB = B_1core_4GB.mul(36, "Bm_36core_576GB")
-Bm_48core_768GB = B_1core_4GB.mul(48, "Bm_48core_768GB")
+BM2 = BM1.mul(2, "BM2")
+BM4 = BM1.mul(4, "BM4")
+BM8 = BM1.mul(8, "BM8")
+BM18 = BM1.mul(18, "BM18")
+BM24 = BM1.mul(24, "BM24")
+BM36 = BM1.mul(36, "BM36")
+BM48 = BM1.mul(48, "BM48")

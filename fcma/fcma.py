@@ -1042,7 +1042,7 @@ class Fcma:
 
                 self._vms[fm] = self._allocation_with_promotion_and_addition(sol)
 
-                # Some nodes may remain empty after the promotiona and addition
+                # Som   e nodes may remain empty after the promotiona and addition
                 self._vms[fm] = Fcma.remove_empty_nodes(self._vms[fm])
 
                 # Until now promotion was prefered to node addition, because aggregating CPU and memory
