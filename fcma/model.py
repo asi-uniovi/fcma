@@ -888,6 +888,10 @@ class SolvingStats:
     # Status before container allocation with promotion
     pre_allocation_status: None | FcmaStatus = None
 
+    # Prealocation lower bound cost. Lower bound when the ILP solver does
+    # not find an optimal solution or uses a gap_rel (speed_level=1)
+    pre_allocation_lower_bound_cost: None | float = None
+
     # Time spend in the container allocation with promotion
     allocation_seconds: None | float = None
 

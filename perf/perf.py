@@ -105,7 +105,7 @@ def get_perf_data(
     total_data["cost($/hour)"] += sol.statistics.final_cost.magnitude
 
     if lower_bound is not None:
-        cost_to_lower_bound = sol.statistics.final_cost.magnitude / lower_bound
+        cost_to_lower_bound = (sol.statistics.final_cost / lower_bound).magnitude
     else:
         cost_to_lower_bound = -1
     perf_data.append(f"{cost_to_lower_bound:.4f}")
@@ -202,9 +202,7 @@ with open(perf_path, "w", newline="") as csv_file:
                     if solution.statistics.pre_allocation_status == FcmaStatus.INVALID:
                         lower_bound = None
                     else:
-                        lower_bound = solution.statistics.pre_allocation_cost.magnitude
-                        if gap_rel > 0:
-                            lower_bound *= 1.0 - gap_rel
+                        lower_bound = solution.statistics.pre_allocation_lower_bound_cost
                 if recycling_load_mul > 1.0:
                     solution.statistics.update_metrics(solution.allocation, mul_solution.allocation)
                 else:

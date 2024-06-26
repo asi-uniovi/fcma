@@ -5,6 +5,7 @@ A bunch of auxiliary methods for the FCMA analysis
 import os
 import itertools
 import copy
+import logging
 from pulp import (
     PulpSolverError,
     log,
@@ -231,30 +232,31 @@ def get_fm_aggregation_pars(
 
 
 # pylint: disable = E, W, R, C
-def solve_cbc_patched(self, lp, use_mps=True):      # pragma: no cover
-    """
-    Solve a MIP problem using CBC patched from original PuLP function
-    to save a log with cbc's output and take from it the best bound.
-    """
+def _solve_cbc_patched(self, lp, use_mps=True):
+    """Solve a MIP problem using CBC patched from original PuLP function
+    to save a log with cbc's output and take from it the best bound."""
 
-    def take_best_bound_from_log(filename, msg: bool): # pragma: no cover
-        """
-        Take the lower bound from the log file. If there is a line with "best possible"
+    def take_best_bound_from_log(filename, msg: bool):
+        """Take the lower bound from the log file. If there is a line with "best possible"
         take the minimum between the lower bound and the best possible because the lower
-        bound is only printed with three decimal digits.
-        """
+        bound is only printed with three decimal digits."""
         lower_bound = None
         best_possible = None
         try:
             with open(filename, "r", encoding="utf8") as f:
                 for l in f:
+                    if msg:
+                        print(l, end="")
                     if "best possible" in l:
                         # There are lines like this:
                         # Cbc0010I After 155300 nodes, 10526 on tree, 0.0015583333 best solution, best possible 0.0015392781 (59.96 seconds)
                         # or this: 'Cbc0005I Partial search - best objective 0.0015583333 (best possible 0.0015392781), took 5904080 iterations and 121519 nodes (60.69 seconds)\n'
                         try:
                             best_possible = float(
-                                l.split("best possible")[-1].strip().split(" ")[0].split(")")[0]
+                                l.split("best possible")[-1]
+                                .strip()
+                                .split(" ")[0]
+                                .split(")")[0]
                             )
                         except:
                             pass
@@ -267,8 +269,12 @@ def solve_cbc_patched(self, lp, use_mps=True):      # pragma: no cover
         return lower_bound
 
     if not self.executable(self.path):
-        raise PulpSolverError("Pulp: cannot execute %s cwd: %s" % (self.path, os.getcwd()))
-    tmpLp, tmpMps, tmpSol, tmpMst = self.create_tmp_files(lp.name, "lp", "mps", "sol", "mst")
+        raise PulpSolverError(
+            "Pulp: cannot execute %s cwd: %s" % (self.path, os.getcwd())
+        )
+    tmpLp, tmpMps, tmpSol, tmpMst = self.create_tmp_files(
+        lp.name, "lp", "mps", "sol", "mst"
+    )
     if use_mps:
         vs, variablesNames, constraintsNames, _ = lp.writeMPS(tmpMps, rename=1)
         cmds = " " + tmpMps + " "
@@ -305,7 +311,7 @@ def solve_cbc_patched(self, lp, use_mps=True):      # pragma: no cover
                 "`logPath` argument replaces `msg=1`. The output will be redirected to the log file."
             )
         pipe = open(self.optionsDict["logPath"], "w")
-    log.debug(self.path + cmds)
+    logging.debug(self.path + cmds)
     args = []
     args.append(self.path)
     args.extend(cmds[1:].split())
@@ -331,11 +337,23 @@ def solve_cbc_patched(self, lp, use_mps=True):      # pragma: no cover
 
         #         print(line, end="")
 
+        # Modified from pulp to kill the process if it takes more than 30 minutes
+        try:
+            cbc.communicate(timeout=1800)  # 30 minutes
+        except subprocess.TimeoutExpired:
+            print("CBC process killed after 30 minutes")
+            if pipe:
+                pipe.close()
+            cbc.kill()
+            cbc.communicate()  # To avoid zombies
+            raise PulpSolverError("Aborted due to timeout")
+
         if cbc.wait() != 0:
             if pipe:
                 pipe.close()
             raise PulpSolverError(
-                "Pulp: Error while trying to execute, use msg=True for more details" + self.path
+                "Pulp: Error while trying to execute, use msg=True for more details"
+                + self.path
             )
         if pipe:
             pipe.close()

@@ -43,7 +43,7 @@ from fcma.helper import (
     check_inputs,
     remove_ics_same_param_higher_price,
     get_fm_aggregation_pars,
-    solve_cbc_patched,
+    _solve_cbc_patched,
 )
 
 
@@ -1029,6 +1029,16 @@ class Fcma:
                 for ic in sol["n_nodes"]:
                     self._solving_stats.pre_allocation_cost += sol["n_nodes"][ic] * ic.price
 
+            # Set the pre_allocation_lower_bound_cost
+            best_bound = self._lp_problem.bestBound
+            if best_bound is None:
+                # CBC does not provide a lower bound when the solution is optimal
+                best_bound = self._solving_stats.pre_allocation_cost
+            else:
+                # In this case CBC provides a lower bound
+                best_bound = CurrencyPerTime(f"{best_bound} usd/hour")
+            self._solving_stats.pre_allocation_lower_bound_cost = best_bound
+
         # -----------------------------------------------------------
         # Allocation phase is common to all the speed levels
         # -----------------------------------------------------------
@@ -1042,7 +1052,7 @@ class Fcma:
 
                 self._vms[fm] = self._allocation_with_promotion_and_addition(sol)
 
-                # Som   e nodes may remain empty after the promotiona and addition
+                # Some nodes may remain empty after the promotiona and addition
                 self._vms[fm] = Fcma.remove_empty_nodes(self._vms[fm])
 
                 # Until now promotion was prefered to node addition, because aggregating CPU and memory
@@ -1183,4 +1193,4 @@ class Fcma:
 
 
 # Monkey patching
-COIN_CMD.solve_CBC = solve_cbc_patched
+COIN_CMD.solve_CBC = _solve_cbc_patched
