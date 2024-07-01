@@ -312,8 +312,11 @@ In any case, a non-empty history list means that the problem solution may not be
 
 Apart from allocations, the solver generates also statistics.
 
-- _pre_allocation_cost_. The cost of the solution before the allocation phase, before new VMs can
+- _pre_allocation_cost_. The cost of the solution before the allocation phase, i.e, before new VMs can
 be added or promoted.
+- _pre_allocation_lower_bound_cost_. A lower bound on the cost previous to the allocation phase 
+for _speed_level=1_. This cost coincides with the _pre_allocation_cost_ when the result of the 
+pre-allocation algorithm is optimal.
 - _total_cost_. The final cost of the solution, after the allocation phase. If _speed_level=1_ and
 _pre_allocation_cost_==_total_cost_, that would mean that the solution is optimal
 in terms of cost.
@@ -322,7 +325,7 @@ in terms of cost.
 - _total_seconds_ = _pre_allocation_seconds_ + _allocation_seconds_.
 - _partial_ilp_seconds_. Time spent in the partial ILP problem before allocation. This value
 is valid only for _speed_level=1_ and is included in _pre_allocation_seconds_ in that case.
-- _pre_allocation_status_. The status previous to the solution. It may be OPTIMAL, FEASIBLE or
+- _pre_allocation_status_. The status previous to the allocation. It may be OPTIMAL, FEASIBLE or
 INVALID. It will never be OPTIMAL for _speed_level=2_ or _speed_level=3_ since with these solvers
 the optimality can not be guaranteed.
 - _final_status_. The solution status, after the allocation phase. It may be OPTIMAL, FEASIBLE or
