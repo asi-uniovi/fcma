@@ -324,8 +324,7 @@ in terms of cost.
 is valid only for _speed_level=1_ and is included in _pre_allocation_seconds_ in that case.
 - _pre_allocation_status_. The status previous to the solution. It may be OPTIMAL, FEASIBLE or
 INVALID. It will never be OPTIMAL for _speed_level=2_ or _speed_level=3_ since with these solvers
-the optimality can not be guaranteed. In addition, solutions marked as optimal for _speed_level=1_ 
-may only be feasible when the ILP solver is configured with _gapRel_ higher than 0.
+the optimality can not be guaranteed.
 - _final_status_. The solution status, after the allocation phase. It may be OPTIMAL, FEASIBLE or
 INVALID, but never be better than _pre_allocation_status_. A FEASIBLE solution is worse than an 
 OPTIMAL solution because altough being valid, can not be guaranteed to be the lowest cost.

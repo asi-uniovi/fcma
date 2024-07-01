@@ -1029,15 +1029,24 @@ class Fcma:
                 for ic in sol["n_nodes"]:
                     self._solving_stats.pre_allocation_cost += sol["n_nodes"][ic] * ic.price
 
-            # Set the pre_allocation_lower_bound_cost
-            best_bound = self._lp_problem.bestBound
-            if best_bound is None:
-                # CBC does not provide a lower bound when the solution is optimal
-                best_bound = self._solving_stats.pre_allocation_cost
+            # Set the pre_allocation_lower_bound_cost por speed level 1
+            if speed_level == 1:
+                best_bound = self._lp_problem.bestBound
+                if best_bound is None:
+                    # CBC does not provide a lower bound when the solution is optimal
+                    best_bound = self._solving_stats.pre_allocation_cost
+                else:
+                    # In this case CBC provides a lower bound
+                    best_bound = CurrencyPerTime(f"{best_bound} usd/hour")
+                self._solving_stats.pre_allocation_lower_bound_cost = best_bound
             else:
-                # In this case CBC provides a lower bound
-                best_bound = CurrencyPerTime(f"{best_bound} usd/hour")
-            self._solving_stats.pre_allocation_lower_bound_cost = best_bound
+                self._solving_stats.pre_allocation_lower_bound_cost = None
+
+            # An optimal pre-allocation status may be only feasible when gapRel>0. An optimal solution is set
+            # feasible when the cost difference is higher than 0.001 $/hour.
+            #cost_diff = self._solving_stats.pre_allocation_cost - self._solving_stats.pre_allocation_lower_bound_cost
+            #if self._solving_stats.pre_allocation_status == FcmaStatus.OPTIMAL and cost_diff > 0.001:
+            #    self._solving_stats.pre_allocation_status = FcmaStatus.FEASIBLE
 
         # -----------------------------------------------------------
         # Allocation phase is common to all the speed levels
