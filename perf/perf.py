@@ -35,8 +35,8 @@ from cloudmodel.unified.units import ureg
 set_application_registry(ureg)
 
 
-file_dir = "problem_data"
-perf_dir = "perf_data"
+file_dir = "problem_data_prueba"
+perf_dir = "perf_data_prueba"
 perf_file_prefix = f"{perf_dir}/perf"
 perf_ref_file = f"{perf_file_prefix}-0.csv"
 

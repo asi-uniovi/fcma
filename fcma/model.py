@@ -160,7 +160,7 @@ class App:
 @dataclass(frozen=True)
 class AppFamilyPerf:
     """
-    Computational parameters of application containers when it runnings on a given instance class family.
+    Computational parameters of application containers when it running on a given instance class family.
     """
 
     cores: ComputationalUnits
