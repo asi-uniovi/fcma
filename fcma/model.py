@@ -477,8 +477,8 @@ class ContainerClass:
 
     def __str__(self) -> str:
         if self.ic is None:
-            return f"{self.app.name}-{self.fm.name}"
-        return f"{self.app.name}-{self.ic.name}"
+            return f"{self.app.name}-{self.fm.name}({self.cores.magnitude}C, {self.mem[0].magnitude}G)"
+        return f"{self.app.name}-{self.ic.name}({self.cores.magnitude}C, {self.mem[0].magnitude}G)"
 
     def __mul__(self, replicas: int) -> ContainerClass:
         """
