@@ -651,6 +651,16 @@ class Vm:
     def __str__(self) -> str:
         return f"{self.ic.name}[{self.id}]"
 
+    def clear(self) -> 'Vm':
+        """
+        Remove all the containers from the node, recovering its initial state.
+        """
+        self.free_cores = self.ic.cores
+        self.free_mem = self.ic.mem
+        self.cgs = []
+        self.history = []
+        return self
+
     def is_allocatable_cc(self, cc: ContainerClass, replicas: int) -> bool:
         """
         Return if the given number of replicas of the container class are allocatable
