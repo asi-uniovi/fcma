@@ -494,7 +494,7 @@ class ContainerClass:
             cores=self.cores * replicas,
             mem=self.mem[self.aggs.index(replicas)],
             perf=self.perf * replicas,
-            aggs=(1,),
+            aggs=self.aggs,
             agg_level=self.agg_level * replicas,
         )
         return container
