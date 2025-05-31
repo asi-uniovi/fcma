@@ -476,9 +476,14 @@ class ContainerClass:
         object.__setattr__(self, "perf", self.perf.to("req/hour"))
 
     def __str__(self) -> str:
-        if self.ic is None:
+        if self.ic is not None and self.app is not None:
+            return f"{self.app.name}-{self.ic.name}({self.cores.magnitude}C, {self.mem[0].magnitude}G)"
+        if self.ic is None and self.app is not None:
             return f"{self.app.name}-{self.fm.name}({self.cores.magnitude}C, {self.mem[0].magnitude}G)"
-        return f"{self.app.name}-{self.ic.name}({self.cores.magnitude}C, {self.mem[0].magnitude}G)"
+        if self.ic is not None and self.app is None:
+            return f"None--{self.ic.name}({self.cores.magnitude}C, {self.mem[0].magnitude}G)"
+        if self.ic is None and self.app is None:
+            return f"None-{self.fm.name}({self.cores.magnitude}C, {self.mem[0].magnitude}G)"
 
     def __mul__(self, replicas: int) -> ContainerClass:
         """
