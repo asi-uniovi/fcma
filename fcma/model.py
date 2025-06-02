@@ -477,14 +477,17 @@ class ContainerClass:
 
     def __str__(self) -> str:
         if self.ic is not None and self.app is not None:
-            return f"{self.app.name}-{self.ic.name}({self.cores.magnitude}C, {self.mem[0].magnitude}G)"
+            return f"{self.app.name}-{self.ic.name}"\
+                   f"({self.cores.magnitude}C, {self.mem[0].magnitude}G, {self.perf.magnitude/3600:0.1f}RPS)"
         if self.ic is None and self.app is not None:
-            return f"{self.app.name}-{self.fm.name}({self.cores.magnitude}C, {self.mem[0].magnitude}G)"
+            return f"{self.app.name}-{self.fm.name}"\
+                   f"({self.cores.magnitude}C, {self.mem[0].magnitude}G, {self.perf.magnitude/3600:0.1f}RPS)"
         if self.ic is not None and self.app is None:
-            return f"None--{self.ic.name}({self.cores.magnitude}C, {self.mem[0].magnitude}G)"
+            return f"None--{self.ic.name}"\
+                   f"({self.cores.magnitude}C, {self.mem[0].magnitude}G, {self.perf.magnitude/3600:0.1f}RPS)"
         if self.ic is None and self.app is None:
-            return f"None-{self.fm.name}({self.cores.magnitude}C, {self.mem[0].magnitude}G)"
-
+            return f"None-{self.fm.name}"\
+                   f"({self.cores.magnitude}C, {self.mem[0].magnitude}G), {self.perf.magnitude/3600:0.1f}RPS"
     def __mul__(self, replicas: int) -> ContainerClass:
         """
         Aggregate the given replicas of the container to get a bigger container.
