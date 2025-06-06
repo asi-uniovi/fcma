@@ -994,6 +994,15 @@ class Fcma:
         :returns: The solution to the problem.
         """
 
+        # Check if application loads area zero and return a null solution in that case
+        zero_workloads = True
+        for app, workload in self._workloads.items():
+            if workload.magnitude != 0:
+                zero_workloads = False
+                break
+        if zero_workloads:
+            return Solution({}, None)
+
         # Reset virtual machine indexes
         Vm.reset_ids()
 

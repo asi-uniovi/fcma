@@ -544,11 +544,12 @@ class ContainerClass:
 
         # Firstly, get the aggregations for the given number of replicas
         n_aggs = self.get_aggregations(replicas)
+
         # Add the memory required by all the aggregations
         mem = Storage("0 gibibytes")
-        for agg, n_agg in zip(self.aggs, n_aggs.values()):
+        for agg, n in n_aggs.items():
             agg_index = self.aggs.index(agg)
-            mem += self.mem[agg_index] * n_agg
+            mem += self.mem[agg_index] * n
 
         return mem
 
