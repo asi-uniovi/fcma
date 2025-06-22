@@ -488,6 +488,18 @@ class ContainerClass:
         if self.ic is None and self.app is None:
             return f"None-{self.fm.name}"\
                    f"({self.cores.magnitude}C, {self.mem[0].magnitude}G), {self.perf.magnitude/3600:0.1f}RPS"
+
+    def  __eq__(self, other: 'ContainerClass'):
+        """
+        Check for equality of container classes.
+        :param other: Other container class
+        :return: True if the container classes are equal.
+        """
+
+        return self.ic == other.ic and self.app == other.app and self.aggs == other.aggs and \
+                self.cores == other.cores and self.mem == other.mem and self.fm.name == other.fm.name and \
+                self.agg_level == other.agg_level and self.perf == other.perf
+
     def __mul__(self, replicas: int) -> ContainerClass:
         """
         Aggregate the given replicas of the container to get a bigger container.
