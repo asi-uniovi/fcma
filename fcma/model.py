@@ -160,7 +160,7 @@ class App:
 @dataclass(frozen=True)
 class AppFamilyPerf:
     """
-    Computational parameters of application containers when it running on a given instance class family.
+    Computational parameters of application containers running on a given instance class family.
     """
 
     cores: ComputationalUnits
@@ -374,6 +374,18 @@ class InstanceClassFamily:
         self.name = name
         self.ics: list[InstanceClass] = []  # Instance classes in the family
 
+    def  __eq__(self, other: 'InstanceClassFamily'):
+        """
+        Check for equality of instance class families. The equality is checked by comparing the instance class
+        family, so each instance class family must have a different name.
+        :param other: Other instance class family.
+        :return: True if the instance class families are equal.
+        """
+        return self.name == other.name
+
+    def __hash__(self):
+        return hash(self.name)
+
     def __str__(self) -> str:
         return self.name
 
@@ -497,7 +509,7 @@ class ContainerClass:
         """
 
         return self.ic == other.ic and self.app == other.app and self.aggs == other.aggs and \
-                self.cores == other.cores and self.mem == other.mem and self.fm.name == other.fm.name and \
+                self.cores == other.cores and self.mem == other.mem and self.fm == other.fm and \
                 self.agg_level == other.agg_level and self.perf == other.perf
 
     def __mul__(self, replicas: int) -> ContainerClass:
@@ -506,7 +518,6 @@ class ContainerClass:
         :param replicas: A number of replicas in aggs.
         :return: The container obtained from aggregation.
         """
-
         container = ContainerClass(
             app=self.app,
             ic=self.ic,
@@ -556,13 +567,11 @@ class ContainerClass:
 
         # Firstly, get the aggregations for the given number of replicas
         n_aggs = self.get_aggregations(replicas)
-
         # Add the memory required by all the aggregations
         mem = Storage("0 gibibytes")
         for agg, n in n_aggs.items():
             agg_index = self.aggs.index(agg)
             mem += self.mem[agg_index] * n
-
         return mem
 
 
