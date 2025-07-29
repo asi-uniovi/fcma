@@ -156,6 +156,12 @@ class App:
     def __str__(self) -> str:
         return self.name
 
+    def __repr__(self) -> str:
+        """
+        String representation of the node.
+        :return: The string representation.
+        """
+        return self.__str__()
 
 @dataclass(frozen=True)
 class AppFamilyPerf:
@@ -289,6 +295,13 @@ class InstanceClass:
     def __str__(self) -> str:
         return self.name
 
+    def __repr__(self) -> str:
+        """
+        String representation of the node.
+        :return: The string representation.
+        """
+        return self.__str__()
+
     def is_multiple(self, ic: InstanceClass) -> bool:
         """
         Check if the given instance class is in the same family and is multiple in terms of price, CPU and memory.
@@ -388,6 +401,13 @@ class InstanceClassFamily:
 
     def __str__(self) -> str:
         return self.name
+
+    def __repr__(self) -> str:
+        """
+        String representation of the node.
+        :return: The string representation.
+        """
+        return self.__str__()
 
     def add_ic_to_family(self, ic: InstanceClass) -> None:
         """
@@ -500,6 +520,13 @@ class ContainerClass:
         if self.ic is None and self.app is None:
             return f"None-{self.fm.name}"\
                    f"({self.cores.magnitude}C, {self.mem[0].magnitude}G), {self.perf.magnitude/3600:0.1f}RPS"
+
+    def __repr__(self) -> str:
+        """
+        String representation of the node.
+        :return: The string representation.
+        """
+        return self.__str__()
 
     def  __eq__(self, other: 'ContainerClass'):
         """
@@ -680,6 +707,13 @@ class Vm:
 
     def __str__(self) -> str:
         return f"{self.ic.name}[{self.id}]"
+
+    def __repr__(self) -> str:
+        """
+        String representation of the node.
+        :return: The string representation.
+        """
+        return self.__str__()
 
     def clear(self) -> 'Vm':
         """
