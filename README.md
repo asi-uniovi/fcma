@@ -38,7 +38,7 @@ as well as the allocation of application containers to the VMs.
 
 Installation
 ------------
-There are two ways to install the package: manually or using poetry.
+There are two ways to install the package: manually or using uv.
 
 ### Manual install
 
@@ -69,36 +69,54 @@ package, install it in editable mode:
 pip install -e .
 ```
 
-### Installation using poetry
+### Installation using uv (recommended)
 
-Poetry is a tool for ensuring that the package is installed with the correct dependencies and versions. The initial setup is more complex than the manual installation, but it is preferable for developing and publishing the package.
+`uv` is a modern Python package manager that provides fast dependency resolution and installation. It's the recommended approach for development and ensures consistent dependency management.
 
-First be sure to have poetry installed in your system. First you require `pipx`, which is a tool that installs python tools into their own isolated environments, and adds them to your path. Follow [this instructions](https://pipx.pypa.io/stable/installation/) to install `pipx`. Then install poetry with pipx:
+First, install uv following the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/). The quickest way is:
 
 ```bash
-pipx install poetry
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-Clone `fcma` repository:
+Clone the `fcma` repository:
 
 ```bash
 git clone https://github.com/asi-uniovi/fcma.git
 cd fcma
 ```
 
-Start a poetry shell (it is a virtual environment specific for this project):
+Sync dependencies and create the virtual environment:
 
 ```bash
-poetry shell
+uv sync
 ```
 
-Install the package (it will be installed in editable mode, for development)
+This will automatically create a virtual environment and install all dependencies (both production and development).
+
+To run commands within the uv environment:
 
 ```bash
-poetry install
+uv run python examples/example1.py
 ```
 
-Remember to use `poetry shell` from `fcma` folder every time you want to work with the package in a different terminal or session.
+To run tests:
+
+```bash
+uv run pytest
+```
+
+To add new dependencies:
+
+```bash
+uv add package_name
+```
+
+To add development dependencies:
+
+```bash
+uv add --group dev package_name
+```
 
 Usage
 -----
@@ -108,6 +126,13 @@ Usage
 ```bash
 python examples/example1.py
 ```
+
+Or if you're using uv:
+
+```bash
+uv run python examples/example1.py
+```
+
 In a short period of time the optimal solution can be seen at the output. The example
 solves the allocation for 4 applications and 48 different instance classes.
 

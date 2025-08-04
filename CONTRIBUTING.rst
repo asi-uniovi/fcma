@@ -64,11 +64,12 @@ Ready to contribute? Here's how to set up `fcma` for local development.
 
     $ git clone git@github.com:your_name_here/fcma.git
 
-3. Install your local copy into a virtualenv. Assuming you have virtualenvwrapper installed, this is how you set up your fork for local development::
+3. Install your local copy using uv. This is the recommended method as it ensures all dependencies are correctly managed::
 
-    $ mkvirtualenv fcma
     $ cd fcma/
-    $ python setup.py develop
+    $ uv sync
+
+   This will create a virtual environment and install all dependencies (both production and development).
 
 4. Create a branch for local development::
 
@@ -76,14 +77,11 @@ Ready to contribute? Here's how to set up `fcma` for local development.
 
    Now you can make your changes locally.
 
-5. When you're done making changes, check that your changes pass flake8 and the
-   tests, including testing other Python versions with tox::
+5. When you're done making changes, check that your changes pass the linting and tests::
 
-    $ flake8 fcma tests
-    $ python setup.py test or pytest
-    $ tox
-
-   To get flake8 and tox, just pip install them into your virtualenv.
+    $ uv run black --check fcma tests
+    $ uv run pylint fcma
+    $ uv run pytest
 
 6. Commit your changes and push your branch to GitHub::
 
