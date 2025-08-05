@@ -6,14 +6,13 @@ import os
 import itertools
 import copy
 import logging
+import subprocess
+import platform
 from pulp import (
     PulpSolverError,
     log,
-    subprocess,
     constants,
     warnings,
-    operating_system,
-    devnull,
 )
 from fcma.model import (
     App,
@@ -317,15 +316,15 @@ def _solve_cbc_patched(self, lp, use_mps=True):
     args.extend(cmds[1:].split())
     with open(tmpLp + ".log", "w", encoding="utf8") as pipe:
         print(f"You can check the CBC log at {tmpLp}.log", flush=True)
-        if not self.msg and operating_system == "win":
+        if not self.msg and platform.system().lower() == "windows":
             # Prevent flashing windows if used from a GUI application
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             cbc = subprocess.Popen(
-                args, stdout=pipe, stderr=pipe, stdin=devnull, startupinfo=startupinfo
+                args, stdout=pipe, stderr=pipe, stdin=subprocess.DEVNULL, startupinfo=startupinfo
             )
         else:
-            cbc = subprocess.Popen(args, stdout=pipe, stderr=pipe, stdin=devnull)
+            cbc = subprocess.Popen(args, stdout=pipe, stderr=pipe, stdin=subprocess.DEVNULL)
 
         # Modified to get the best bound
         # output, _ = cbc.communicate()

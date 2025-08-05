@@ -1,27 +1,44 @@
-[tool.poetry]
+[project]
 name = "fcma"
 version = "1.0.0"
 description = "Fast Container to Machine Allocator"
-authors = ["Jose Maria Lopez <chechu@uniovi.es>"]
+authors = [
+    { name = "Jose Maria Lopez", email = "chechu@uniovi.es" }
+]
 readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+]
+dependencies = [
+    "cloudmodel @ git+https://github.com/asi-uniovi/cloudmodel.git",
+    "pulp>=2.8.0",
+    "rich>=13.7.0",
+    "pint",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-cloudmodel = { git = "https://jentrialgo@github.com/jldiaz-uniovi/cloudmodel.git" }
-pulp = "^2.8.0"
-rich = "^13.7.0"
-
-[tool.poetry.group.dev.dependencies]
-black = "^24.2.0"
-pytest = "^8.1.1"
-coverage = "^7.4.3"
-pylint = "^3.1.0"
-pytest-cov = "^4.1.0"
-mypy = "^1.9.0"
+[dependency-groups]
+dev = [
+    "black>=24.2.0",
+    "pytest>=8.1.1",
+    "coverage>=7.4.3",
+    "pylint>=3.1.0",
+    "pytest-cov>=4.1.0",
+    "mypy>=1.9.0",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.black]
 line-length=100
