@@ -487,6 +487,7 @@ class ContainerClass:
     perf: RequestsPerTime
     aggs: tuple[int]  # Container valid aggregations
     agg_level: int = 1  # Container current aggregation level
+    label: str = ""  # Optional label for the container class
 
     def __post_init__(self):
         """
