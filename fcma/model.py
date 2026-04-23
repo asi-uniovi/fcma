@@ -488,6 +488,11 @@ class ContainerClass:
     aggs: tuple[int]  # Container valid aggregations
     agg_level: int = 1  # Container current aggregation level
     label: str = ""  # Optional label for the container class
+    id: int = -1 # Optional id for the container
+    # Memory value for the current aggregation level
+    @property
+    def memv(self) -> float:
+        return self.mem[self.aggs.index(self.agg_level)]
 
     def __post_init__(self):
         """
@@ -509,22 +514,26 @@ class ContainerClass:
         object.__setattr__(self, "perf", self.perf.to("req/hour"))
 
     def __str__(self) -> str:
+        if self.id == -1:
+            id_str = ""
+        else:
+            id_str = f", id={self.id}"
         if self.ic is not None and self.app is not None:
             return f"{self.app.name}-{self.ic.name}"\
-                   f"({self.cores.magnitude}C, {self.mem[0].magnitude}G, {self.perf.magnitude/3600:0.1f}RPS)"
+                   f"({self.cores.magnitude}C, {self.mem[0].magnitude}G, {self.perf.magnitude/3600:0.1f}RPS{id_str})"
         if self.ic is None and self.app is not None:
             return f"{self.app.name}-{self.fm.name}"\
-                   f"({self.cores.magnitude}C, {self.mem[0].magnitude}G, {self.perf.magnitude/3600:0.1f}RPS)"
+                   f"({self.cores.magnitude}C, {self.mem[0].magnitude}G, {self.perf.magnitude/3600:0.1f}RPS{id_str})"
         if self.ic is not None and self.app is None:
             return f"None--{self.ic.name}"\
-                   f"({self.cores.magnitude}C, {self.mem[0].magnitude}G, {self.perf.magnitude/3600:0.1f}RPS)"
+                   f"({self.cores.magnitude}C, {self.mem[0].magnitude}G, {self.perf.magnitude/3600:0.1f}RPS{id_str})"
         if self.ic is None and self.app is None:
             return f"None-{self.fm.name}"\
-                   f"({self.cores.magnitude}C, {self.mem[0].magnitude}G), {self.perf.magnitude/3600:0.1f}RPS"
+                   f"({self.cores.magnitude}C, {self.mem[0].magnitude}G), {self.perf.magnitude/3600:0.1f}RPS{id_str}"
 
     def __repr__(self) -> str:
         """
-        String representation of the node.
+        String representation of the container class.
         :return: The string representation.
         """
         return self.__str__()
@@ -532,32 +541,48 @@ class ContainerClass:
     def  __eq__(self, other: 'ContainerClass'):
         """
         Check for equality of container classes.
-        :param other: Other container class
+        :param other: Other container class.
         :return: True if the container classes are equal.
         """
 
         return self.ic == other.ic and self.app == other.app and self.aggs == other.aggs and \
                 self.cores == other.cores and self.mem == other.mem and self.fm == other.fm and \
                 self.agg_level == other.agg_level and self.perf == other.perf
+    
+    def almost_equal(self, other: 'ContainerClass'):
+        """
+        Check if it is almost identical to the given container class.
+        :param other: Another container class.
+        :return: True if the container classes are almost equal.
+        """
+        return self.ic == other.ic and self.app == other.app and self.aggs == other.aggs and \
+            self.fm == other.fm  and abs(self.agg_level - other.agg_level) < DELTA_VAL and \
+            abs(self.cores - other.cores).magnitude < DELTA_VAL and \
+            abs(self.memv - other.memv).magnitude < DELTA_VAL and \
+            abs(self.perf - other.perf).magnitude < DELTA_VAL
+            
 
-    def __mul__(self, replicas: int) -> ContainerClass:
+    def __mul__(self, multiplier: float) -> ContainerClass:
         """
-        Aggregate the given replicas of the container to get a bigger container.
-        :param replicas: A number of replicas in aggs.
-        :return: The container obtained from aggregation.
+        Multiply the container class.
+        :param multiplier: The multiplier.
+        :return: The container class obtained from the multiplication.
+        :raise ValueError: When the multiplier is invalid.
         """
+        if multiplier <= 0 or self.agg_level * multiplier > self.aggs[-1] + DELTA_VAL:
+            raise ValueError("Invalid container class multiplier")
         container = ContainerClass(
             app=self.app,
             ic=self.ic,
             fm=self.fm,
-            cores=self.cores * replicas,
-            mem=self.mem[self.aggs.index(replicas)],
-            perf=self.perf * replicas,
+            cores=self.cores * multiplier,
+            mem=self.mem,
+            perf=self.perf * multiplier,
             aggs=self.aggs,
-            agg_level=self.agg_level * replicas,
+            agg_level=self.agg_level * multiplier,
         )
         return container
-
+    
     def get_aggregations(self, replicas: int) -> dict[int, int]:
         """
         Calculate container aggregations for a given number of replicas. For example, 9 replicas may be
