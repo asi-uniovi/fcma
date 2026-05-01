@@ -489,10 +489,10 @@ class ContainerClass:
     agg_level: int = 1  # Container current aggregation level
     label: str = ""  # Optional label for the container class
     id: int = -1 # Optional id for the container
-    # Memory value for the current aggregation level
+    # Memory value for the closest aggregation level
     @property
-    def memv(self) -> float:
-        return self.mem[self.aggs.index(self.agg_level)]
+    def memv(self) -> Storage:
+        return min(zip(self.aggs, self.mem), key=lambda pair: abs(pair[0] - self.agg_level))[1]
 
     def __post_init__(self):
         """
@@ -549,19 +549,6 @@ class ContainerClass:
                 self.cores == other.cores and self.mem == other.mem and self.fm == other.fm and \
                 self.agg_level == other.agg_level and self.perf == other.perf
     
-    def almost_equal(self, other: 'ContainerClass'):
-        """
-        Check if it is almost identical to the given container class.
-        :param other: Another container class.
-        :return: True if the container classes are almost equal.
-        """
-        return self.ic == other.ic and self.app == other.app and self.aggs == other.aggs and \
-            self.fm == other.fm  and abs(self.agg_level - other.agg_level) < DELTA_VAL and \
-            abs(self.cores - other.cores).magnitude < DELTA_VAL and \
-            abs(self.memv - other.memv).magnitude < DELTA_VAL and \
-            abs(self.perf - other.perf).magnitude < DELTA_VAL
-            
-
     def __mul__(self, multiplier: float) -> ContainerClass:
         """
         Multiply the container class.
