@@ -488,7 +488,7 @@ class ContainerClass:
     aggs: tuple[int]  # Container valid aggregations
     agg_level: int = 1  # Container current aggregation level
     label: str = ""  # Optional label for the container class
-    id: int = -1 # Optional id for the container
+    id: int = 0 # Optional id for the container
     # Memory value for the closest aggregation level
     @property
     def memv(self) -> Storage:
@@ -514,7 +514,7 @@ class ContainerClass:
         object.__setattr__(self, "perf", self.perf.to("req/hour"))
 
     def __str__(self) -> str:
-        if self.id == -1:
+        if self.id == 0:
             id_str = ""
         else:
             id_str = f", id={self.id}"
@@ -547,7 +547,7 @@ class ContainerClass:
 
         return self.ic == other.ic and self.app == other.app and self.aggs == other.aggs and \
                 self.cores == other.cores and self.mem == other.mem and self.fm == other.fm and \
-                self.agg_level == other.agg_level and self.perf == other.perf
+                self.agg_level == other.agg_level and self.perf == other.perf and self.id == other.id
     
     def __mul__(self, multiplier: float) -> ContainerClass:
         """
@@ -556,17 +556,17 @@ class ContainerClass:
         :return: The container class obtained from the multiplication.
         :raise ValueError: When the multiplier is invalid.
         """
-        if multiplier <= 0 or self.agg_level * multiplier > self.aggs[-1] + DELTA_VAL:
+        if multiplier < 0 or self.agg_level * multiplier > self.aggs[-1] + DELTA_VAL:
             raise ValueError("Invalid container class multiplier")
         container = ContainerClass(
             app=self.app,
             ic=self.ic,
             fm=self.fm,
-            cores=self.cores * multiplier,
+            cores=round(self.cores * multiplier, 6),
             mem=self.mem,
-            perf=self.perf * multiplier,
+            perf=round(self.perf * multiplier, 6),
             aggs=self.aggs,
-            agg_level=self.agg_level * multiplier,
+            agg_level=round(self.agg_level * multiplier, 6),
         )
         return container
     
