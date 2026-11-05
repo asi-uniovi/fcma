@@ -38,67 +38,29 @@ as well as the allocation of application containers to the VMs.
 
 Installation
 ------------
-There are two ways to install the package: manually or using poetry.
-
-### Manual install
-
-Clone the repository:
-
-```bash
-git clone https://github.com/asi-uniovi/fcma.git
-cd fcma
-```
-
-Optionally, create and activate a virtual environment:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-Install the package with `pip`:
-
-```bash
-pip install .
-```
-
-If you want to be able to modify the code and see the changes reflected in the
-package, install it in editable mode:
-
-```bash
-pip install -e .
-```
-
-### Installation using poetry
-
-Poetry is a tool for ensuring that the package is installed with the correct dependencies and versions. The initial setup is more complex than the manual installation, but it is preferable for developing and publishing the package.
-
-First be sure to have poetry installed in your system. First you require `pipx`, which is a tool that installs python tools into their own isolated environments, and adds them to your path. Follow [this instructions](https://pipx.pypa.io/stable/installation/) to install `pipx`. Then install poetry with pipx:
-
-```bash
-pipx install poetry
-```
-
-Clone `fcma` repository:
+Use [uv](https://docs.astral.sh/uv/) to create the project environment and install
+FCMA and its dependencies. Install uv using the
+[official instructions](https://docs.astral.sh/uv/getting-started/installation/),
+then clone the repository and synchronize the environment:
 
 ```bash
 git clone https://github.com/asi-uniovi/fcma.git
 cd fcma
+uv sync --locked
 ```
 
-Start a poetry shell (it is a virtual environment specific for this project):
+This creates a `.venv` environment and installs the project, including NumPy and
+the development dependencies. Run commands in the environment with `uv run`:
 
 ```bash
-poetry shell
+uv run python examples/example1.py
+uv run pytest
 ```
 
-Install the package (it will be installed in editable mode, for development)
-
-```bash
-poetry install
-```
-
-Remember to use `poetry shell` from `fcma` folder every time you want to work with the package in a different terminal or session.
+To activate the environment in your shell instead, run `source .venv/bin/activate`
+on Linux/macOS or `.venv\Scripts\activate` on Windows. When changing project
+dependencies, use `uv add <package>` (or `uv add --dev <package>` for development
+dependencies), then commit the updated `uv.lock`.
 
 Usage
 -----

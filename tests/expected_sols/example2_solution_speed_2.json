@@ -20,7 +20,7 @@
       "app_name": "appA",
       "container_groups": [
         {
-          "container_name": "appA-c6i_m6i_r6i",
+          "container_name": "appA-c6i_m6i_r6i(0.48C, 1.15234375G, 0.1RPS)",
           "vm_name": "c6i.large[0]",
           "app_name": "appA",
           "performance": 0.1,
@@ -28,7 +28,7 @@
           "cores": 480.0
         },
         {
-          "container_name": "appA-c6i_m6i_r6i",
+          "container_name": "appA-c6i_m6i_r6i(0.24C, 1.15234375G, 0.1RPS)",
           "vm_name": "c6i.large[0]",
           "app_name": "appA",
           "performance": 0.05,
@@ -36,7 +36,7 @@
           "cores": 240.0
         },
         {
-          "container_name": "appA-c6i_m6i_r6i",
+          "container_name": "appA-c6i_m6i_r6i(0.12C, 1.15234375G, 0.0RPS)",
           "vm_name": "c6i.large[0]",
           "app_name": "appA",
           "performance": 0.025,
@@ -44,7 +44,7 @@
           "cores": 120.0
         },
         {
-          "container_name": "appA-c6i_m6i_r6i",
+          "container_name": "appA-c6i_m6i_r6i(0.96C, 1.15234375G, 0.2RPS)",
           "vm_name": "c6i.2xlarge[0]",
           "app_name": "appA",
           "performance": 0.2,
@@ -52,7 +52,7 @@
           "cores": 960.0
         },
         {
-          "container_name": "appA-c6i_m6i_r6i",
+          "container_name": "appA-c6i_m6i_r6i(0.12C, 1.15234375G, 0.0RPS)",
           "vm_name": "c6i.2xlarge[0]",
           "app_name": "appA",
           "performance": 0.025,

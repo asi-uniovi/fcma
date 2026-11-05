@@ -25,7 +25,7 @@
       "app_name": "app_0",
       "container_groups": [
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.12xlarge[0]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -33,7 +33,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(3.45C, 33.12G, 0.0RPS)",
           "vm_name": "m5.12xlarge[0]",
           "app_name": "app_0",
           "performance": 0.0036799999999999997,
@@ -41,7 +41,7 @@
           "cores": 3450.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.24xlarge[4]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -49,7 +49,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[1]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -57,7 +57,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[2]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -65,7 +65,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[3]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -73,7 +73,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[4]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -81,7 +81,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[5]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -89,7 +89,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[6]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -97,7 +97,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[7]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -105,7 +105,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[8]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -113,7 +113,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[9]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -121,7 +121,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[10]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -129,7 +129,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[11]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -137,7 +137,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[12]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -145,7 +145,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[13]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -153,7 +153,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[14]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -161,7 +161,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[15]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -169,7 +169,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[16]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -177,7 +177,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[17]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -185,7 +185,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[18]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -193,7 +193,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[19]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -201,7 +201,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[20]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -209,7 +209,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.18xlarge[21]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -217,7 +217,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.24xlarge[0]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -225,7 +225,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(3.45C, 33.12G, 0.0RPS)",
           "vm_name": "m5.24xlarge[0]",
           "app_name": "app_0",
           "performance": 0.0036799999999999997,
@@ -233,7 +233,7 @@
           "cores": 3450.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.24xlarge[1]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -241,7 +241,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(3.45C, 33.12G, 0.0RPS)",
           "vm_name": "m5.24xlarge[1]",
           "app_name": "app_0",
           "performance": 0.0036799999999999997,
@@ -249,7 +249,7 @@
           "cores": 3450.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.24xlarge[2]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -257,7 +257,7 @@
           "cores": 6900.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(3.45C, 33.12G, 0.0RPS)",
           "vm_name": "m5.24xlarge[2]",
           "app_name": "app_0",
           "performance": 0.0036799999999999997,
@@ -265,7 +265,7 @@
           "cores": 3450.0
         },
         {
-          "container_name": "app_0-c5_m5_r5",
+          "container_name": "app_0-c5_m5_r5(6.9C, 33.12G, 0.0RPS)",
           "vm_name": "m5.24xlarge[3]",
           "app_name": "app_0",
           "performance": 0.007359999999999999,
@@ -280,7 +280,7 @@
       "app_name": "app_1",
       "container_groups": [
         {
-          "container_name": "app_1-c5_m5_r5",
+          "container_name": "app_1-c5_m5_r5(5.4C, 19.44G, 0.1RPS)",
           "vm_name": "m5.12xlarge[0]",
           "app_name": "app_1",
           "performance": 0.12,
@@ -288,7 +288,7 @@
           "cores": 5400.0
         },
         {
-          "container_name": "app_1-c5_m5_r5",
+          "container_name": "app_1-c5_m5_r5(5.4C, 19.44G, 0.1RPS)",
           "vm_name": "m5.24xlarge[4]",
           "app_name": "app_1",
           "performance": 0.12,
@@ -296,7 +296,7 @@
           "cores": 5400.0
         },
         {
-          "container_name": "app_1-c5_m5_r5",
+          "container_name": "app_1-c5_m5_r5(2.7C, 19.44G, 0.1RPS)",
           "vm_name": "m5.24xlarge[4]",
           "app_name": "app_1",
           "performance": 0.06,
@@ -304,7 +304,7 @@
           "cores": 2700.0
         },
         {
-          "container_name": "app_1-c5_m5_r5",
+          "container_name": "app_1-c5_m5_r5(2.7C, 19.44G, 0.1RPS)",
           "vm_name": "m5.24xlarge[0]",
           "app_name": "app_1",
           "performance": 0.06,
@@ -312,7 +312,7 @@
           "cores": 2700.0
         },
         {
-          "container_name": "app_1-c5_m5_r5",
+          "container_name": "app_1-c5_m5_r5(2.7C, 19.44G, 0.1RPS)",
           "vm_name": "m5.24xlarge[1]",
           "app_name": "app_1",
           "performance": 0.06,
@@ -320,7 +320,7 @@
           "cores": 2700.0
         },
         {
-          "container_name": "app_1-c5_m5_r5",
+          "container_name": "app_1-c5_m5_r5(5.4C, 19.44G, 0.1RPS)",
           "vm_name": "m5.24xlarge[2]",
           "app_name": "app_1",
           "performance": 0.12,
@@ -328,7 +328,7 @@
           "cores": 5400.0
         },
         {
-          "container_name": "app_1-c5_m5_r5",
+          "container_name": "app_1-c5_m5_r5(2.7C, 19.44G, 0.1RPS)",
           "vm_name": "m5.24xlarge[2]",
           "app_name": "app_1",
           "performance": 0.06,
@@ -336,7 +336,7 @@
           "cores": 2700.0
         },
         {
-          "container_name": "app_1-c5_m5_r5",
+          "container_name": "app_1-c5_m5_r5(5.4C, 19.44G, 0.1RPS)",
           "vm_name": "m5.24xlarge[3]",
           "app_name": "app_1",
           "performance": 0.12,
@@ -344,7 +344,7 @@
           "cores": 5400.0
         },
         {
-          "container_name": "app_1-c5_m5_r5",
+          "container_name": "app_1-c5_m5_r5(2.7C, 19.44G, 0.1RPS)",
           "vm_name": "m5.24xlarge[3]",
           "app_name": "app_1",
           "performance": 0.06,

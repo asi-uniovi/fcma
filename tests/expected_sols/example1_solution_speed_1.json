@@ -30,7 +30,7 @@
       "app_name": "appA",
       "container_groups": [
         {
-          "container_name": "appA-c5_m5_r5",
+          "container_name": "appA-c5_m5_r5(0.8C, 0.48828125G, 0.8RPS)",
           "vm_name": "c5.4xlarge[0]",
           "app_name": "appA",
           "performance": 0.8,
@@ -38,7 +38,7 @@
           "cores": 800.0
         },
         {
-          "container_name": "appA-c5_m5_r5",
+          "container_name": "appA-c5_m5_r5(0.4C, 0.48828125G, 0.4RPS)",
           "vm_name": "c5.4xlarge[0]",
           "app_name": "appA",
           "performance": 0.4,
@@ -53,7 +53,7 @@
       "app_name": "appB",
       "container_groups": [
         {
-          "container_name": "appB-c5_m5_r5",
+          "container_name": "appB-c5_m5_r5(0.96C, 0.1953125G, 6.0RPS)",
           "vm_name": "c5.4xlarge[0]",
           "app_name": "appB",
           "performance": 6.0,
@@ -61,7 +61,7 @@
           "cores": 960.0
         },
         {
-          "container_name": "appB-c5_m5_r5",
+          "container_name": "appB-c5_m5_r5(0.08C, 0.1953125G, 0.5RPS)",
           "vm_name": "c5.4xlarge[0]",
           "app_name": "appB",
           "performance": 0.5,
@@ -76,7 +76,7 @@
       "app_name": "appD",
       "container_groups": [
         {
-          "container_name": "appD-c6g_m6g_r6g",
+          "container_name": "appD-c6g_m6g_r6g(6.5C, 21.484375G, 0.8RPS)",
           "vm_name": "c6g.4xlarge[0]",
           "app_name": "appD",
           "performance": 0.8,
@@ -84,7 +84,7 @@
           "cores": 6500.0
         },
         {
-          "container_name": "appD-c6g_m6g_r6g",
+          "container_name": "appD-c6g_m6g_r6g(6.5C, 21.484375G, 0.8RPS)",
           "vm_name": "c6g.4xlarge[1]",
           "app_name": "appD",
           "performance": 0.8,
@@ -92,7 +92,7 @@
           "cores": 6500.0
         },
         {
-          "container_name": "appD-c6g_m6g_r6g",
+          "container_name": "appD-c6g_m6g_r6g(6.5C, 21.484375G, 0.8RPS)",
           "vm_name": "c6g.12xlarge[0]",
           "app_name": "appD",
           "performance": 0.8,
@@ -100,7 +100,7 @@
           "cores": 6500.0
         },
         {
-          "container_name": "appD-c6g_m6g_r6g",
+          "container_name": "appD-c6g_m6g_r6g(6.5C, 21.484375G, 0.8RPS)",
           "vm_name": "c6g.24xlarge[0]",
           "app_name": "appD",
           "performance": 0.8,
@@ -108,7 +108,7 @@
           "cores": 6500.0
         },
         {
-          "container_name": "appD-c6g_m6g_r6g",
+          "container_name": "appD-c6g_m6g_r6g(6.5C, 21.484375G, 0.8RPS)",
           "vm_name": "c6g.24xlarge[1]",
           "app_name": "appD",
           "performance": 0.8,
@@ -123,7 +123,7 @@
       "app_name": "appC",
       "container_groups": [
         {
-          "container_name": "appC-c6g_m6g_r6g",
+          "container_name": "appC-c6g_m6g_r6g(0.96C, 0.439453125G, 3.2RPS)",
           "vm_name": "c6g.12xlarge[0]",
           "app_name": "appC",
           "performance": 3.2,
@@ -131,7 +131,7 @@
           "cores": 960.0
         },
         {
-          "container_name": "appC-c6g_m6g_r6g",
+          "container_name": "appC-c6g_m6g_r6g(0.48C, 0.439453125G, 1.6RPS)",
           "vm_name": "c6g.12xlarge[0]",
           "app_name": "appC",
           "performance": 1.6,
@@ -139,7 +139,7 @@
           "cores": 480.0
         },
         {
-          "container_name": "appC-c6g_m6g_r6g",
+          "container_name": "appC-c6g_m6g_r6g(0.12C, 0.439453125G, 0.4RPS)",
           "vm_name": "c6g.12xlarge[0]",
           "app_name": "appC",
           "performance": 0.4,
@@ -147,7 +147,7 @@
           "cores": 120.0
         },
         {
-          "container_name": "appC-c6g_m6g_r6g",
+          "container_name": "appC-c6g_m6g_r6g(0.96C, 0.439453125G, 3.2RPS)",
           "vm_name": "c6g.24xlarge[0]",
           "app_name": "appC",
           "performance": 3.2,
@@ -155,7 +155,7 @@
           "cores": 960.0
         },
         {
-          "container_name": "appC-c6g_m6g_r6g",
+          "container_name": "appC-c6g_m6g_r6g(0.48C, 0.439453125G, 1.6RPS)",
           "vm_name": "c6g.24xlarge[0]",
           "app_name": "appC",
           "performance": 1.6,
@@ -163,7 +163,7 @@
           "cores": 480.0
         },
         {
-          "container_name": "appC-c6g_m6g_r6g",
+          "container_name": "appC-c6g_m6g_r6g(0.12C, 0.439453125G, 0.4RPS)",
           "vm_name": "c6g.24xlarge[0]",
           "app_name": "appC",
           "performance": 0.4,

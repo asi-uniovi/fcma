@@ -9,6 +9,7 @@ from dataclasses import asdict, dataclass
 from enum import Enum
 from itertools import chain
 from math import floor
+from numpy import interp
 from functools import lru_cache
 import pulp
 from pulp import PULP_CBC_CMD
@@ -489,10 +490,15 @@ class ContainerClass:
     agg_level: int = 1  # Container current aggregation level
     label: str = ""  # Optional label for the container class
     id: int = 0 # Optional id for the container
-    # Memory value for the closest aggregation level
+    # Memory value for the aggregation level
     @property
     def memv(self) -> Storage:
-        return min(zip(self.aggs, self.mem), key=lambda pair: abs(pair[0] - self.agg_level))[1]
+        if self.agg_level in self.aggs:
+            return self.mem[self.aggs.index(self.agg_level)]
+        else:
+            # Interpolate the memory value for the aggregation level
+            mem_values = [0] + [mem.to("gibibytes").magnitude for mem in self.mem]
+            return interp(self.agg_level, list((0,) + self.aggs), mem_values) * Storage("1 gibibyte")
 
     def __post_init__(self):
         """
