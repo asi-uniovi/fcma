@@ -153,7 +153,7 @@ class Fcma:
                 # Consider ics with enough cores to allocate the minimum cores required by the app
                 cores = system[app_fm].cores
                 # Memory for a non-aggregated container is the first value
-                mem = system[app_fm].mem[0]
+                mem = system[app_fm].mem
                 perf = system[app_fm].perf
                 aggs = system[app_fm].aggs
                 if ic.cores + DELTA_CPU > cores:
